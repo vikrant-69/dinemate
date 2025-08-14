@@ -1,0 +1,121 @@
+{
+  "project_info": {
+    "project_number": "227541299131",
+    "project_id": "soulmate-de4b3",
+    "storage_bucket": "soulmate-de4b3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:227541299131:android:25d11d7592bc683ff8de9e",
+        "android_client_info": {
+          "package_name": "com.chatapp.soulmate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "227541299131-kfg44oncc1dhurlo5b29im0ku2lhp9bc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chatapp.soulmate",
+            "certificate_hash": "1bf95c0354f74f55474ad8110e7b2c2b1a2d0688"
+          }
+        },
+        {
+          "client_id": "227541299131-0d36oi7oddhn8dghcdlcsttpvode0sc1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAD1C8wSdD0J5QB6uJjP3nJbREPzBV_YY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "227541299131-0d36oi7oddhn8dghcdlcsttpvode0sc1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:227541299131:android:2fff645c8b2ec395f8de9e",
+        "android_client_info": {
+          "package_name": "com.hackathon.dinemate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "227541299131-8fhu60mvttesvfenb45l24ejqbu2shpj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hackathon.dinemate",
+            "certificate_hash": "1bf95c0354f74f55474ad8110e7b2c2b1a2d0688"
+          }
+        },
+        {
+          "client_id": "227541299131-0d36oi7oddhn8dghcdlcsttpvode0sc1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAD1C8wSdD0J5QB6uJjP3nJbREPzBV_YY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "227541299131-0d36oi7oddhn8dghcdlcsttpvode0sc1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:227541299131:android:784e5848978f302ff8de9e",
+        "android_client_info": {
+          "package_name": "com.swipehire.hireinn"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "227541299131-of0a99c9kcsfvl5m8c0eet0hv0pndnfu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.swipehire.hireinn",
+            "certificate_hash": "1bf95c0354f74f55474ad8110e7b2c2b1a2d0688"
+          }
+        },
+        {
+          "client_id": "227541299131-0d36oi7oddhn8dghcdlcsttpvode0sc1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAD1C8wSdD0J5QB6uJjP3nJbREPzBV_YY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "227541299131-0d36oi7oddhn8dghcdlcsttpvode0sc1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
