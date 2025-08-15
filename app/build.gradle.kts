@@ -45,20 +45,20 @@ android {
 
 dependencies {
     // for splash screen
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation(libs.androidx.appcompat.v161)
+    implementation(libs.material)
+    implementation(libs.androidx.constraintlayout.v214)
+    implementation(libs.androidx.core.splashscreen)
 
-    implementation("androidx.credentials:credentials:1.3.0")
+    implementation(libs.androidx.credentials.v130)
     // Bridge that lets Credential Manager talk to Google Play Services’ auth
-    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation(libs.androidx.credentials.play.services.auth)
 
     // Google Identity Services for Android (the types you’re using)
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation(libs.googleid)
 
     // Firebase Auth (you already use it)
-    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
+    implementation(libs.firebase.auth.ktx.v2300)
 
     // for subscription
     implementation(libs.billing)

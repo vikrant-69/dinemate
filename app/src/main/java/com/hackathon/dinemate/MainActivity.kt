@@ -28,10 +28,11 @@ import androidx.navigation.navArgument
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import com.hackathon.dinemate.signin.InputUserDetailsScreen
+import com.hackathon.dinemate.user.InputUserDetailsScreen
 import com.hackathon.dinemate.signin.SignInScreen
 import com.hackathon.dinemate.ui.theme.DineMateTheme
-import com.swipehire.hireinn.home.HomeScreen
+import com.hackathon.dinemate.user.UserViewModel
+import com.hackathon.dinemate.home.HomeScreen
 
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")

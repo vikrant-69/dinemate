@@ -1,4 +1,4 @@
-package com.hackathon.dinemate
+package com.hackathon.dinemate.user
 
 import android.annotation.SuppressLint
 import android.app.Application
@@ -6,32 +6,23 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.auth.User
 import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.firestore.snapshots
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
 import com.google.gson.Gson
-import kotlinx.coroutines.flow.Flow
+import com.hackathon.dinemate.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 
 class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val storage = FirebaseStorage.getInstance()
