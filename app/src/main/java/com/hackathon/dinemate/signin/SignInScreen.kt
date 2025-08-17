@@ -6,6 +6,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,10 +30,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -57,13 +61,17 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.hackathon.dinemate.R
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.hackathon.dinemate.DineMateIconOnly
+import com.hackathon.dinemate.LogoSize
 import kotlinx.coroutines.delay
 
 
@@ -76,7 +84,7 @@ fun SignInScreen(navController: NavController, context: Context, modifier: Modif
         "DINEMATE."
     )
     val auth = Firebase.auth
-
+    var isLoading by remember { mutableStateOf(false) }
     val user = auth.currentUser
 
     // Check if user is already signed in
@@ -106,14 +114,7 @@ fun SignInScreen(navController: NavController, context: Context, modifier: Modif
                 }
         }
     }
-    var currentCardIndex by remember { mutableStateOf(0) }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(3000)
-            currentCardIndex = (currentCardIndex + 1) % cards.size
-        }
-    }
 
     val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
         GoogleSignInUtils.performSignIn(
@@ -130,50 +131,69 @@ fun SignInScreen(navController: NavController, context: Context, modifier: Modif
 
     Column(
         modifier = Modifier.fillMaxSize()
-            .background(Color.Green)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color.Green, // Center color
-                        Color.Transparent // Fades outward
-                    ),
-                    center = Offset.Unspecified, // Automatically centers
-                    radius = 800f // Adjust the radius as needed
-                )
-            ),
+            .background(Color.White),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val currentText = cards[currentCardIndex]
-        val parts = currentText.split(",", limit = 2)
-        val annotatedText = buildAnnotatedString {
-            append(
-                AnnotatedString(
-                    text = parts[0] + ",",
-                    spanStyle = SpanStyle(color = Color.Red)
-                )
+        Row (
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ){
+            DineMateIconOnly(
+                size = LogoSize.Medium,
+                showAnimation = true
             )
-
-            if (parts.size > 1){
-                append(
-                    AnnotatedString(
-                        text = parts[1],
-                        spanStyle = SpanStyle(color = Color.Blue)
-                    )
-                )
-            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(color = Color(0xFFFF6B6B))) {
+                        append("Dine")
+                    }
+                    withStyle(SpanStyle(color = Color(0xFF4ECDC4))) {
+                        append("Mate")
+                    }
+                },
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
         }
-        Text(
-            text = annotatedText,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
+        Text(
+            text = "Your trusted dining companion",
+            color = Color(0xFF6B7280),
+            fontSize = 16.sp,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        // Welcome text
+        Text(
+            text = "Welcome!",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF1A1A1A)
+        )
+
+        Text(
+            text = "Sign in to discover amazing restaurants tailored just for you",
+            color = Color(0xFF6B7280),
+            fontSize = 16.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 24.sp,
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+        )
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        OutlinedButton(
             onClick = {
+                isLoading = true
                 GoogleSignInUtils.performSignIn(
                     context,
                     scope,
@@ -197,41 +217,90 @@ fun SignInScreen(navController: NavController, context: Context, modifier: Modif
                                         Log.d("FirestoreDebug", "Document does not exist!")
                                         navController.navigate("inputUserDetails/$userId")
                                     }
+                                    isLoading = false
                                 }
                                 .addOnFailureListener { e ->
                                     Log.e("FirestoreDebug", "Error fetching user data", e)
+                                    isLoading = false
                                 }
                         }
                     }
                 )
             },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Red, // Background color
-                contentColor = Color.Green   // Text color
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Color.White,        // White background
+                contentColor = Color.DarkGray        // Dark gray text
+            ),
+            border = BorderStroke(
+                width = 1.dp,
+                color = Color.DarkGray               // Dark gray outline
             ),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.width(250.dp)
+        ){
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.DarkGray,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_google),
+                    contentDescription = "Google Icon",
+                    modifier = Modifier.size(24.dp),
+                    tint = Color.Unspecified
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Sign In With Google",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowRight,
+                    contentDescription = "Google Sign In: Move Forward",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .graphicsLayer(scaleX = 1.3f, scaleY = 1.3f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Divider
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_google),
-                contentDescription = "Google Icon",
-                modifier = Modifier.size(24.dp),
-                tint = Color.Unspecified
+            Divider(
+                modifier = Modifier.weight(1f),
+                color = Color(0xFFE5E7EB)
             )
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                "Sign In With Google",
-//                    fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleMedium
+                text = "Secure & Fast",
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = Color(0xFF9CA3AF),
+                fontSize = 14.sp
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = "Google Sign In: Move Forward",
-                modifier = Modifier
-                    .size(24.dp)
-                    .graphicsLayer(scaleX = 1.3f, scaleY = 1.3f)
+            Divider(
+                modifier = Modifier.weight(1f),
+                color = Color(0xFFE5E7EB)
             )
         }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Terms text
+        Text(
+            text = "By continuing, you agree to our Terms of Service and Privacy Policy",
+            color = Color(0xFF9CA3AF),
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 18.sp,
+            modifier = Modifier
+                .fillMaxWidth(0.8f  )
+        )
     }
 }
