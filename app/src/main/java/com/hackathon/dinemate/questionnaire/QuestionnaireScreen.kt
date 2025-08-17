@@ -17,6 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hackathon.dinemate.ui.theme.*
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import com.hackathon.dinemate.config.AppConfig
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -28,7 +29,7 @@ fun QuestionnaireScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(userId) {
-        viewModel.initializeQuestionnaire(userId)
+        viewModel.initializeQuestionnaire(userId, AppConfig.BASE_URL)
     }
 
     LaunchedEffect(uiState.isCompleted) {
@@ -66,15 +67,6 @@ fun QuestionnaireScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Max selectable hint and transient message
-//            uiState.currentQuestion?.let { q ->
-//                Text(
-//                    text = "Select up to ${q.maxSelectable} option(s).",
-//                    style = MaterialTheme.typography.bodySmall,
-//                    color = MediumGrey
-//                )
-//            }
 
             uiState.transientMessage?.let { msg ->
                 Spacer(modifier = Modifier.height(8.dp))
