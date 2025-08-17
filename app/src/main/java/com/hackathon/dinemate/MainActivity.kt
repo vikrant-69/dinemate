@@ -33,6 +33,7 @@ import com.hackathon.dinemate.signin.SignInScreen
 import com.hackathon.dinemate.ui.theme.DineMateTheme
 import com.hackathon.dinemate.user.UserViewModel
 import com.hackathon.dinemate.home.HomeScreen
+import com.hackathon.dinemate.questionnaire.QuestionnaireScreen
 
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -98,12 +99,28 @@ fun AppNavigation(
             composable("signInScreen") {
                 SignInScreen(navController, context)
             }
+
             composable(
                 "inputUserDetails/{userId}",
                 arguments = listOf(navArgument("userId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: ""
                 InputUserDetailsScreen(userId, navController, userViewModel, context)
+            }
+
+            composable(
+                "questionnaire/{userId}",
+                arguments = listOf(navArgument("userId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                QuestionnaireScreen(
+                    userId = userId,
+                    onComplete = {
+                        navController.navigate("homeScreen/$userId") {
+                            popUpTo("questionnaire/$userId") { inclusive = true }
+                        }
+                    }
+                )
             }
 
             composable(
@@ -131,8 +148,3 @@ class UserViewModelFactory(private val application: Application) : ViewModelProv
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }
-
-
-
-
-
