@@ -124,7 +124,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 saveUserToPreferences(newUser) // Save the initial profile locally
 
                 // Navigate
-                navController.navigate("homeScreen/$userId") { // Ensure route matches NavHost
+                navController.navigate("questionnaire/$userId") { // Ensure route matches NavHost
                     popUpTo(navController.graph.startDestinationId) { inclusive = true } // Clear back stack to prevent going back to sign-up
                 }
 

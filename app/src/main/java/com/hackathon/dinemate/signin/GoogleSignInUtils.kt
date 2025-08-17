@@ -33,45 +33,60 @@ class GoogleSignInUtils {
                           launcher: ManagedActivityResultLauncher<Intent, ActivityResult>?,
                           login:(String) -> Unit)
         {
-            val credentialManager = androidx.credentials.CredentialManager.create(context)
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(getCredentialOptions(context))
+            val credentialManager = CredentialManager.create(context)
+
+            // Try to get an authorized account first
+            val authorizedAccountsRequest = GetCredentialRequest.Builder()
+                .addCredentialOption(getCredentialOptions(context, filterByAuthorizedAccounts = true))
                 .build()
 
             scope.launch {
                 try {
-                    val result = credentialManager.getCredential(context, request)
-                    when(result.credential){
+                    val result = credentialManager.getCredential(context, authorizedAccountsRequest)
+                    handleCredentialResult(result.credential, login)
+                } catch (e: NoCredentialException) {
+                    // No authorized accounts found, try to get all accounts
+                    val allAccountsRequest = GetCredentialRequest.Builder()
+                        .addCredentialOption(getCredentialOptions(context, filterByAuthorizedAccounts = false))
+                        .build()
 
-                        is CustomCredential ->{
-                            if (result.credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL){
-                                val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
-                                val googleTokenId = googleIdTokenCredential.idToken
-                                val authCredential = GoogleAuthProvider.getCredential(googleTokenId, null)
-
-                                val user = Firebase.auth.signInWithCredential(authCredential).await().user
-
-                                user?.let {
-                                    if(it.isAnonymous.not()){
-                                        login.invoke(it.uid)
-                                    }
-                                }
-                            }
-                        }
-                        else ->{
-
-                        }
+                    try {
+                        val result = credentialManager.getCredential(context, allAccountsRequest)
+                        handleCredentialResult(result.credential, login)
+                    } catch (e: GetCredentialException) {
+                        Log.e("GoogleSignInUtils", "GetCredentialException: ${e.message}", e)
+                        // All attempts failed, launch intent to add account
+                        launcher?.launch(getIntent())
                     }
-                }catch (e: NoCredentialException){
+                } catch (e: GetCredentialException) {
+                    Log.e("GoogleSignInUtils", "GetCredentialException: ${e.message}", e)
+                    // All attempts failed, launch intent to add account
                     launcher?.launch(getIntent())
-                }catch (e: GetCredentialException){
-                    println("Error Occured ${R.string.client_id}")
-                    Log.e("UtilError", e.toString())
-
-                    e.printStackTrace()
                 }
             }
+        }
 
+        private suspend fun handleCredentialResult(credential: androidx.credentials.Credential, login: (String) -> Unit) {
+            when(credential){
+                is CustomCredential -> {
+                    if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL){
+                        val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                        val googleTokenId = googleIdTokenCredential.idToken
+                        val authCredential = GoogleAuthProvider.getCredential(googleTokenId, null)
+
+                        val user = Firebase.auth.signInWithCredential(authCredential).await().user
+
+                        user?.let {
+                            if(it.isAnonymous.not()){
+                                login.invoke(it.uid)
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    // Handle other credential types if needed
+                }
+            }
         }
 
         private fun getIntent(): Intent{
@@ -80,10 +95,9 @@ class GoogleSignInUtils {
             }
         }
 
-        private fun getCredentialOptions(context: Context): GetGoogleIdOption {
-
+        private fun getCredentialOptions(context: Context, filterByAuthorizedAccounts: Boolean): GetGoogleIdOption {
             return GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(false)
+                .setFilterByAuthorizedAccounts(filterByAuthorizedAccounts)
                 .setAutoSelectEnabled(true)
                 .setServerClientId(context.getString(R.string.client_id))
                 .build()
