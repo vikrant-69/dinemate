@@ -19,34 +19,35 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
 import com.google.gson.Gson
 import com.hackathon.dinemate.R
+import com.hackathon.dinemate.config.AppConfig
+import com.hackathon.dinemate.util.HttpUtil
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val storage = FirebaseStorage.getInstance()
     private val db = Firebase.firestore
     private val auth = FirebaseAuth.getInstance()
-    private val gson = Gson() // Instance for JSON serialization
+    private val gson = Gson()
+    private var baseURL: String = AppConfig.BASE_URL
 
-    // --- State Flows ---
-    private val _user = MutableStateFlow<User?>(null) // Holds the current user data
+    private val _user = MutableStateFlow<User?>(null)
     @SuppressLint("RestrictedApi")
     val user: StateFlow<User?> = _user
 
-    // Preferences - Name clearly indicates source
     private val userPrefs = application.getSharedPreferences("UserProfileCache", Context.MODE_PRIVATE)
-    private val authPrefs = application.getSharedPreferences("UserAuthPrefs", Context.MODE_PRIVATE) // Separate auth details
+    private val authPrefs = application.getSharedPreferences("UserAuthPrefs", Context.MODE_PRIVATE)
 
     private val googleSignInClient: GoogleSignInClient
 
-
-    private val prefs = application.getSharedPreferences("SavedJobsCache", Context.MODE_PRIVATE)
-
     init {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(application.getString(R.string.client_id)) // ensure this string exists in `strings.xml`
+            .requestIdToken(application.getString(R.string.client_id))
             .requestEmail()
             .build()
 
@@ -54,15 +55,13 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     }
 
-
-    /** Clears locally cached user data */
     private fun clearUserPreferences() {
         userPrefs.edit().clear().apply()
         Log.d("UserViewModel", "Cleared user SharedPreferences cache.")
     }
 
     private fun saveUserToPreferences(@SuppressLint("RestrictedApi") user: User) {
-        viewModelScope.launch { // Keep it off the main thread
+        viewModelScope.launch {
             try {
                 val userJson = gson.toJson(user)
                 userPrefs.edit().putString(PREF_USER_JSON, userJson).apply()
@@ -72,7 +71,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
-
 
     fun updateUserProfile(userId: String, firstName: String, lastName: String, headline: String, location: String){
         val updates = hashMapOf<String, Any>(
@@ -92,10 +90,39 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             }
     }
 
-
-
     fun getCurrentUserId(): String? {
         return auth.currentUser?.uid
+    }
+
+    private suspend fun registerUserWithAPI(
+        email: String,
+        firebaseId: String,
+        username: String,
+        fullName: String
+    ): Boolean {
+        return try {
+            val url = "${baseURL.trimEnd('/')}/api/v1/auth/register"
+
+            val json = JSONObject().apply {
+                put("email", email)
+                put("firebase_id", firebaseId)
+                put("username", username)
+                put("full_name", fullName)
+                put("preferences", JSONObject())
+            }.toString()
+
+            Log.d("UserViewModel", "Registering user with API: $json")
+
+            val response = withContext(Dispatchers.IO) {
+                HttpUtil.post(url, json)
+            }
+
+            Log.d("UserViewModel", "API Registration successful: ${response.statusCode}")
+            true
+        } catch (e: Exception) {
+            Log.e("UserViewModel", "Error registering user with API", e)
+            false
+        }
     }
 
     fun completeInitialUserInfo(userId: String, firstName: String, lastName: String, context: Context, navController: NavController){
@@ -107,25 +134,46 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             try {
-                // Use set without merge here to ensure a clean slate for a NEW user profile doc
                 db.collection(USERS_COLLECTION).document(userId).set(userMap).await()
 
-                // Save minimal auth details locally (optional, userId is key)
+                val userEmail = auth.currentUser?.email
+                if (userEmail == null) {
+                    Log.e("UserViewModel", "User email is null, cannot register with API")
+                    Toast.makeText(context, "Error: User email not found", Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+
+                val username = userEmail.substringBefore("@")
+                val fullName = "$firstName $lastName"
+
+                val apiRegistrationSuccess = registerUserWithAPI(
+                    email = userEmail,
+                    firebaseId = userId,
+                    username = username,
+                    fullName = fullName
+                )
+
+                if (!apiRegistrationSuccess) {
+                    Log.w("UserViewModel", "API registration failed, but continuing with local setup")
+                    Toast.makeText(context, "Profile created locally, but server registration failed", Toast.LENGTH_SHORT).show()
+                } else {
+                    Log.d("UserViewModel", "User successfully registered with backend API")
+                    Toast.makeText(context, "Profile created successfully!", Toast.LENGTH_SHORT).show()
+                }
+
                 authPrefs.edit().apply {
                     putString("userId", userId)
-                    putString("firstName", firstName) // Maybe not needed if profile loads fast
-                    putString("lastName", lastName)  // Maybe not needed
+                    putString("firstName", firstName)
+                    putString("lastName", lastName)
                     apply()
                 }
 
-                // Eagerly load/cache the newly created profile
-                val newUser = gson.fromJson(gson.toJson(userMap), User::class.java) // Create User from map
+                val newUser = gson.fromJson(gson.toJson(userMap), User::class.java)
                 _user.value = newUser
-                saveUserToPreferences(newUser) // Save the initial profile locally
+                saveUserToPreferences(newUser)
 
-                // Navigate
-                navController.navigate("questionnaire/$userId") { // Ensure route matches NavHost
-                    popUpTo(navController.graph.startDestinationId) { inclusive = true } // Clear back stack to prevent going back to sign-up
+                navController.navigate("questionnaire/$userId") {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
                 }
 
             } catch (e: Exception) {
@@ -135,19 +183,16 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     fun getUserEmail(): String? {
         return FirebaseAuth.getInstance().currentUser?.email
     }
 
-    // User Profile Operations (Firebase Storage)
     fun saveProfilePicture(context: Context, userId: String, imageUri: Uri, onComplete: (Boolean, String) -> Unit) {
         val storageRef = storage.reference.child("dinemate_users/$userId/profile/profile_pic.jpg")
 
         storageRef.putFile(imageUri)
             .addOnSuccessListener {
                 storageRef.downloadUrl.addOnSuccessListener { uri ->
-                    // Update user document in Firestore
                     db.collection("dinemate_users").document(userId)
                         .update("profilePic", uri.toString())
                         .addOnSuccessListener {
@@ -164,11 +209,10 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             }
     }
 
-
     fun signOut(onComplete: (() -> Unit)? = null, onError: ((Exception) -> Unit)? = null) {
         googleSignInClient.signOut().addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                auth.signOut() // Firebase sign-out
+                auth.signOut()
                 onComplete?.invoke()
             } else {
                 onError?.invoke(task.exception ?: Exception("Unknown error during sign-out"))
@@ -176,11 +220,8 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     companion object {
         private const val USERS_COLLECTION = "dinemate_users"
-        private const val PREF_USER_JSON = "user_profile_json" // Key for storing user JSON
+        private const val PREF_USER_JSON = "user_profile_json"
     }
-
-
 }

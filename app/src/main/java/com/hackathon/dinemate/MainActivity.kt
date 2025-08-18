@@ -28,6 +28,7 @@ import androidx.navigation.navArgument
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.hackathon.dinemate.config.AppConfig
 import com.hackathon.dinemate.user.InputUserDetailsScreen
 import com.hackathon.dinemate.signin.SignInScreen
 import com.hackathon.dinemate.ui.theme.DineMateTheme
@@ -123,16 +124,11 @@ fun AppNavigation(
                 )
             }
 
-            composable(
-                "homeScreen/{userId}",
-                arguments = listOf(navArgument("userId") { type = NavType.StringType })
-            ) { backStackEntry ->
+            composable("homeScreen/{userId}") { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: ""
                 HomeScreen(
-                    navController = navController,
                     userId = userId,
-                    context = context,
-                    userViewModel = userViewModel
+                    baseURL = AppConfig.BASE_URL
                 )
             }
         }
