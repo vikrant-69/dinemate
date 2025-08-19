@@ -50,6 +50,7 @@ import androidx.compose.material3.OutlinedTextField
 fun HomeScreen(
     userId: String,
     baseURL: String = AppConfig.BASE_URL,
+    onNavigateToChat: (GroupSummary) -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val ui by viewModel.uiState.collectAsState()
@@ -145,7 +146,8 @@ fun HomeScreen(
         HomeGroupsList(
             ui = ui,
             viewModel = viewModel,
-            padding = padding
+            padding = padding,
+            onNavigateToChat = onNavigateToChat
         )
     }
 
@@ -208,7 +210,8 @@ fun HomeScreen(
 private fun HomeGroupsList(
     ui: HomeUiState,
     viewModel: HomeViewModel,
-    padding: PaddingValues
+    padding: PaddingValues,
+    onNavigateToChat: (GroupSummary) -> Unit // Add this parameter
 ) {
     Column(
         Modifier
@@ -232,7 +235,9 @@ private fun HomeGroupsList(
                         ElevatedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { viewModel.selectGroup(g.id) },
+                                .clickable {
+                                    onNavigateToChat(g) // Navigate to chat instead of selectGroup
+                                },
                             colors = CardDefaults.elevatedCardColors(containerColor = LightGrey)
                         ) {
                             Column(Modifier.padding(12.dp)) {
@@ -247,7 +252,6 @@ private fun HomeGroupsList(
                     }
                 }
             }
-            // else: show nothing per requirement
         }
     }
 }
