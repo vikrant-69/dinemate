@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hackathon.dinemate.ProfileTab
 import com.hackathon.dinemate.config.AppConfig
 import com.hackathon.dinemate.ui.theme.Black
 import com.hackathon.dinemate.ui.theme.Charcoal
@@ -24,13 +25,15 @@ import com.hackathon.dinemate.ui.theme.DarkGrey
 import com.hackathon.dinemate.ui.theme.LightGrey
 import com.hackathon.dinemate.ui.theme.MediumGrey
 import com.hackathon.dinemate.ui.theme.White
+import com.hackathon.dinemate.user.UserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     userId: String,
     baseURL: String = AppConfig.BASE_URL,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    userViewModel: UserViewModel
 ) {
     val ui by viewModel.uiState.collectAsState()
 
@@ -71,7 +74,7 @@ fun HomeScreen(
         when (ui.currentTab) {
             BottomTab.Home -> HomeTab(ui, viewModel, padding)
             BottomTab.Groups -> GroupsTab(ui, viewModel, padding)
-            BottomTab.Profile -> ProfileTab(padding) // placeholder
+            BottomTab.Profile -> ProfileTab(userViewModel, padding) // placeholder
         }
     }
 }
@@ -270,17 +273,17 @@ private fun GroupsTab(ui: HomeUiState, viewModel: HomeViewModel, padding: Paddin
     }
 }
 
-@Composable
-private fun ProfileTab(padding: PaddingValues) {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .padding(padding),
-        contentAlignment = Alignment.Center
-    ) {
-        Text("Profile coming soon", color = MediumGrey)
-    }
-}
+//@Composable
+//private fun ProfileTab(padding: PaddingValues) {
+//    Box(
+//        Modifier
+//            .fillMaxSize()
+//            .padding(padding),
+//        contentAlignment = Alignment.Center
+//    ) {
+//        Text("Profile coming soon", color = MediumGrey)
+//    }
+//}
 
 @Composable
 private fun MessageItem(msg: Message) {

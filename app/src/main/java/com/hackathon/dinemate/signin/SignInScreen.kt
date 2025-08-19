@@ -72,48 +72,53 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.hackathon.dinemate.DineMateIconOnly
 import com.hackathon.dinemate.LogoSize
+import com.hackathon.dinemate.user.User
+import com.hackathon.dinemate.user.UserViewModel
 import kotlinx.coroutines.delay
 
 
 @Composable
-fun SignInScreen(navController: NavController, context: Context, modifier: Modifier = Modifier) {
+fun SignInScreen(
+    userViewModel: UserViewModel,
+    navController: NavController,
+    context: Context,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val firestore = com.google.firebase.Firebase.firestore
-    val cards = listOf(
-        "DINEMATE."
-    )
+
     val auth = Firebase.auth
     var isLoading by remember { mutableStateOf(false) }
     val user = auth.currentUser
 
     // Check if user is already signed in
-    LaunchedEffect(user) {
-        user?.let {
-            val userId = it.uid
-            val usersRef = firestore.collection("dinemate_users")
-
-            usersRef.whereEqualTo("userId", userId).get()
-                .addOnSuccessListener { querySnapshot ->
-                    if (!querySnapshot.isEmpty) {
-                        val document = querySnapshot.documents[0]
-//                        val userId = document.getString("userId") ?: "User"
-                        Log.d("FirestoreDebug", "Document found: ${document.data}")
-                        navController.navigate("homeScreen/$userId") {
-                            popUpTo("signInScreen") { inclusive = true }
-                        }
-                    } else {
-                        Log.d("FirestoreDebug", "Document does not exist!")
-                        navController.navigate("inputUserDetails/$userId") {
-                            popUpTo("signInScreen") { inclusive = true }
-                        }
-                    }
-                }
-                .addOnFailureListener { e ->
-                    Log.e("FirestoreDebug", "Error fetching user data", e)
-                }
-        }
-    }
+//    LaunchedEffect(user) {
+//        user?.let {
+//            val userId = it.uid
+//            val usersRef = firestore.collection("dinemate_users")
+//
+//            usersRef.whereEqualTo("userId", userId).get()
+//                .addOnSuccessListener { querySnapshot ->
+//                    if (!querySnapshot.isEmpty) {
+//                        val document = querySnapshot.documents[0]
+////                        val userId = document.getString("userId") ?: "User"
+//                        Log.d("FirestoreDebug", "Document found: ${document.data}")
+//                        navController.navigate("homeScreen/$userId") {
+//                            popUpTo("signInScreen") { inclusive = true }
+//                        }
+//                    } else {
+//                        Log.d("FirestoreDebug", "Document does not exist!")
+//                        navController.navigate("inputUserDetails/$userId") {
+//                            popUpTo("signInScreen") { inclusive = true }
+//                        }
+//                    }
+//                }
+//                .addOnFailureListener { e ->
+//                    Log.e("FirestoreDebug", "Error fetching user data", e)
+//                }
+//        }
+//    }
 
 
     val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
@@ -122,8 +127,8 @@ fun SignInScreen(navController: NavController, context: Context, modifier: Modif
             scope,
             null,
             login = { userId ->
-                Toast.makeText(context, "login successfully", Toast.LENGTH_SHORT).show()
-                navController.navigate("inputUserDetails/$userId")
+                Toast.makeText(context, "signin successfully", Toast.LENGTH_SHORT).show()
+                navController.navigate("homeScreen/$userId")
             }
         )
     }
@@ -200,24 +205,32 @@ fun SignInScreen(navController: NavController, context: Context, modifier: Modif
                     launcher,
                     login = {
                         val user = Firebase.auth.currentUser
+
                         user?.let {
-                            val userId = it.uid // Get userId from Firebase Auth
-                            Log.d("USERID", userId)
+                            val userId = it.uid
+                            val name = it.displayName ?: "Unknown"
+                            val userName = it.email?.split("@")?.get(0) ?: "NoName"
+                            val profilPicUri = it.photoUrl?.toString() ?: ""
+
+                            val currentUser = User(
+                                userId,
+                                userName,
+                                name,
+                                profilPicUri
+                            )
                             val usersRef = Firebase.firestore.collection("dinemate_users")
 
                             usersRef.whereEqualTo("userId", userId).get()
                                 .addOnSuccessListener { querySnapshot ->
-                                    if (!querySnapshot.isEmpty) {
-                                        // Document exists, retrieve userName
-                                        val document = querySnapshot.documents[0] // Get the first matching document
-                                        val userName = document.getString("userId") ?: "User"
-                                        Log.d("FirestoreDebug", "Document found: ${document.data}")
-                                        navController.navigate("homeScreen/$userId")
-                                    } else {
-                                        Log.d("FirestoreDebug", "Document does not exist!")
-                                        navController.navigate("inputUserDetails/$userId")
+                                    if (querySnapshot.isEmpty) {
+                                        userViewModel.saveUserProfile(currentUser, context)
+
                                     }
+
                                     isLoading = false
+                                    navController.navigate("homeScreen/$userId") {
+                                        popUpTo("signInScreen") { inclusive = true }
+                                    }
                                 }
                                 .addOnFailureListener { e ->
                                     Log.e("FirestoreDebug", "Error fetching user data", e)

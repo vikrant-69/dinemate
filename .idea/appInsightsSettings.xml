@@ -22,10 +22,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.hackathon.dinemate" />
+                  <option name="mobileSdkAppId" value="1:227541299131:android:2fff645c8b2ec395f8de9e" />
+                  <option name="projectId" value="soulmate-de4b3" />
+                  <option name="projectNumber" value="227541299131" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
