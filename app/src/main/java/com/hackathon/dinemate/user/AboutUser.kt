@@ -1,7 +1,5 @@
 package com.hackathon.dinemate.user
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -23,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,7 +65,7 @@ fun AboutSection(
                     modifier = Modifier.padding(bottom = 8.dp),
                     color = Charcoal
                 )
-                Row{
+                Row {
                     // Single, clear IconButton to enter edit mode
                     IconButton(
                         onClick = {
@@ -97,7 +93,12 @@ fun AboutSection(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
-                    label = { Text("Professional Summary", color= Color.Black) }, // More descriptive label
+                    label = {
+                        Text(
+                            "Professional Summary",
+                            color = Color.Black
+                        )
+                    }, // More descriptive label
                     maxLines = 5,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = Charcoal),
                     colors = OutlinedTextFieldDefaults.colors(

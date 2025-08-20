@@ -94,7 +94,8 @@ class HomeViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 Log.e("HomeVM", "createGroup failed", e)
-                _uiState.value = _uiState.value.copy(isLoading = false, error = "Failed to create group")
+                _uiState.value =
+                    _uiState.value.copy(isLoading = false, error = "Failed to create group")
             }
         }
     }
@@ -133,11 +134,15 @@ class HomeViewModel : ViewModel() {
                         selectGroup(groupId)
                     }
                 } else {
-                    _uiState.value = _uiState.value.copy(isLoading = false, error = "Invalid response from server")
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "Invalid response from server"
+                    )
                 }
             } catch (e: Exception) {
                 Log.e("HomeVM", "joinGroup failed", e)
-                _uiState.value = _uiState.value.copy(isLoading = false, error = "Failed to join group")
+                _uiState.value =
+                    _uiState.value.copy(isLoading = false, error = "Failed to join group")
             }
         }
     }
@@ -184,7 +189,8 @@ class HomeViewModel : ViewModel() {
                 onDone?.invoke()
             } catch (e: Exception) {
                 Log.e("HomeVM", "fetchUserGroups failed", e)
-                _uiState.value = _uiState.value.copy(isFetchingGroups = false, error = "Failed to fetch groups")
+                _uiState.value =
+                    _uiState.value.copy(isFetchingGroups = false, error = "Failed to fetch groups")
             }
         }
     }
@@ -196,7 +202,8 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isFetchingMessages = true, error = null)
-                val url = "${baseURL.trimEnd('/')}/api/v1/group/${groupId}/messages?firebase_id=${firebaseId}"
+                val url =
+                    "${baseURL.trimEnd('/')}/api/v1/group/${groupId}/messages?firebase_id=${firebaseId}"
 
                 val response = withContext(Dispatchers.IO) {
                     HttpUtil.get(url)
@@ -220,10 +227,14 @@ class HomeViewModel : ViewModel() {
                     )
                 }
 
-                _uiState.value = _uiState.value.copy(isFetchingMessages = false, messages = messages)
+                _uiState.value =
+                    _uiState.value.copy(isFetchingMessages = false, messages = messages)
             } catch (e: Exception) {
                 Log.e("HomeVM", "fetchMessages failed", e)
-                _uiState.value = _uiState.value.copy(isFetchingMessages = false, error = "Failed to fetch messages")
+                _uiState.value = _uiState.value.copy(
+                    isFetchingMessages = false,
+                    error = "Failed to fetch messages"
+                )
             }
         }
     }
@@ -259,7 +270,8 @@ class HomeViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(isSendingMessage = false)
             } catch (e: Exception) {
                 Log.e("HomeVM", "sendMessage failed", e)
-                _uiState.value = _uiState.value.copy(isSendingMessage = false, error = "Failed to send message")
+                _uiState.value =
+                    _uiState.value.copy(isSendingMessage = false, error = "Failed to send message")
             }
         }
     }

@@ -28,13 +28,12 @@ import androidx.navigation.navArgument
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import com.hackathon.dinemate.config.AppConfig
-import com.hackathon.dinemate.user.InputUserDetailsScreen
+import com.hackathon.dinemate.home.GroupChatScreen
+import com.hackathon.dinemate.home.HomeScreen
+import com.hackathon.dinemate.questionnaire.QuestionnaireScreen
 import com.hackathon.dinemate.signin.SignInScreen
 import com.hackathon.dinemate.ui.theme.DineMateTheme
 import com.hackathon.dinemate.user.UserViewModel
-import com.hackathon.dinemate.home.HomeScreen
-import com.hackathon.dinemate.questionnaire.QuestionnaireScreen
 
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -98,7 +97,7 @@ fun AppNavigation(
     if (isAuthChecked) {
         NavHost(navController = navController, startDestination = startDestination) {
             composable("signInScreen") {
-                SignInScreen(userViewModel, navController, context)
+                SignInScreen(navController, context)
             }
 
             composable(
@@ -116,12 +115,46 @@ fun AppNavigation(
                 )
             }
 
-            composable("homeScreen/{userId}") { backStackEntry ->
+            composable(
+                "homeScreen/{userId}",
+                arguments = listOf(navArgument("userId") { type = NavType.StringType })
+            ) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: ""
                 HomeScreen(
                     userId = userId,
-                    baseURL = AppConfig.BASE_URL,
+                    onNavigateToChat = { group ->
+                        navController.navigate(
+                            "groupChat/${group.id}/${group.name}/${group.invite_code ?: ""}/${userId}"
+                        )
+                    },
                     userViewModel = userViewModel
+                )
+            }
+
+            composable(
+                "groupChat/{groupId}/{groupName}/{inviteCode}/{userId}",
+                arguments = listOf(
+                    navArgument("groupId") { type = NavType.StringType },
+                    navArgument("groupName") { type = NavType.StringType },
+                    navArgument("inviteCode") {
+                        type = NavType.StringType
+                        defaultValue = ""
+                        nullable = true
+                    },
+                    navArgument("userId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val groupId = backStackEntry.arguments?.getString("groupId") ?: ""
+                val groupName = backStackEntry.arguments?.getString("groupName") ?: ""
+                val inviteCode = backStackEntry.arguments?.getString("inviteCode")
+                val userId = backStackEntry.arguments?.getString("userId") ?: ""
+
+                GroupChatScreen(
+                    userId = userId,
+                    groupId = groupId,
+                    groupName = groupName,
+                    inviteCode = inviteCode,
+                    onBack = { navController.popBackStack() }
                 )
             }
         }

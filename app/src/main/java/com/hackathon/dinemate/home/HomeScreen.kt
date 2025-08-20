@@ -1,30 +1,68 @@
 package com.hackathon.dinemate.home
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.hackathon.dinemate.ProfileTab
 import com.hackathon.dinemate.config.AppConfig
 import com.hackathon.dinemate.ui.theme.Black
 import com.hackathon.dinemate.ui.theme.Charcoal
-import com.hackathon.dinemate.ui.theme.DarkGrey
 import com.hackathon.dinemate.ui.theme.LightGrey
 import com.hackathon.dinemate.ui.theme.MediumGrey
 import com.hackathon.dinemate.ui.theme.White
+import com.hackathon.dinemate.user.ProfileTab
 import com.hackathon.dinemate.user.UserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,10 +70,19 @@ import com.hackathon.dinemate.user.UserViewModel
 fun HomeScreen(
     userId: String,
     baseURL: String = AppConfig.BASE_URL,
+    onNavigateToChat: (GroupSummary) -> Unit = {},
     viewModel: HomeViewModel = viewModel(),
     userViewModel: UserViewModel
 ) {
     val ui by viewModel.uiState.collectAsState()
+    var selectedTab by remember { mutableStateOf("home") }
+
+    var fabExpanded by remember { mutableStateOf(false) }
+    var showCreateSheet by remember { mutableStateOf(false) }
+    var showJoinSheet by remember { mutableStateOf(false) }
+
+    val createSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val joinSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(userId, baseURL) {
         viewModel.initialize(userId, baseURL)
@@ -51,291 +98,315 @@ fun HomeScreen(
         bottomBar = {
             NavigationBar(containerColor = LightGrey) {
                 NavigationBarItem(
-                    selected = ui.currentTab == BottomTab.Home,
-                    onClick = { viewModel.setTab(BottomTab.Home) },
+                    selected = selectedTab == "home",
+                    onClick = { selectedTab = "home" },
                     icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
                     label = { Text("Home") }
                 )
                 NavigationBarItem(
-                    selected = ui.currentTab == BottomTab.Groups,
-                    onClick = { viewModel.setTab(BottomTab.Groups) },
-                    icon = { Icon(Icons.Filled.Group, contentDescription = "Groups") },
-                    label = { Text("Groups") }
+                    selected = selectedTab == "search",
+                    onClick = { selectedTab = "search" },
+                    icon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+                    label = { Text("Search") }
                 )
                 NavigationBarItem(
-                    selected = ui.currentTab == BottomTab.Profile,
-                    onClick = { viewModel.setTab(BottomTab.Profile) },
+                    selected = selectedTab == "profile",
+                    onClick = { selectedTab = "profile" },
                     icon = { Icon(Icons.Filled.Person, contentDescription = "Profile") },
                     label = { Text("Profile") }
                 )
             }
+        },
+        floatingActionButton = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(end = 16.dp, bottom = 16.dp),
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (fabExpanded) {
+                        SmallActionFab(
+                            label = "Create",
+                            onClick = {
+                                fabExpanded = false
+                                showCreateSheet = true
+                            },
+                            icon = {
+                                Icon(Icons.Filled.Add, contentDescription = "Add Item")
+                            }
+                        )
+                        SmallActionFab(
+                            label = "Join",
+                            onClick = {
+                                fabExpanded = false
+                                showJoinSheet = true
+                            },
+                            icon = {
+                                Icon(Icons.Default.GroupAdd, contentDescription = "Add Item")
+                            }
+                        )
+                    }
+
+                    FloatingActionButton(
+                        onClick = { fabExpanded = !fabExpanded },
+                        containerColor = Charcoal,
+                        contentColor = White
+                    ) {
+                        Text(
+                            if (fabExpanded) "×" else "+",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                }
+            }
         }
     ) { padding ->
-        when (ui.currentTab) {
-            BottomTab.Home -> HomeTab(ui, viewModel, padding)
-            BottomTab.Groups -> GroupsTab(ui, viewModel, padding)
-            BottomTab.Profile -> ProfileTab(userViewModel, padding) // placeholder
+        when (selectedTab) {
+            "home" -> HomeGroupsList(
+                ui = ui,
+                viewModel = viewModel,
+                padding = padding,
+                onNavigateToChat = onNavigateToChat
+            )
+
+            "profile" -> ProfileTab(userViewModel)
         }
+
+    }
+
+    if (showCreateSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { if (!ui.isLoading) showCreateSheet = false },
+            sheetState = createSheetState,
+            containerColor = LightGrey,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            CreateGroupSheetContent(
+                name = ui.createGroupName,
+                description = ui.createGroupDescription,
+                isLoading = ui.isLoading,
+                onNameChange = viewModel::onCreateGroupNameChanged,
+                onDescriptionChange = viewModel::onCreateGroupDescChanged,
+                onCancel = { if (!ui.isLoading) showCreateSheet = false },
+                onCreate = {
+                    viewModel.createGroup()
+                    showCreateSheet = false
+                }
+            )
+        }
+    }
+
+    if (showJoinSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { if (!ui.isLoading) showJoinSheet = false },
+            sheetState = joinSheetState,
+            containerColor = LightGrey,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            JoinGroupSheetContent(
+                inviteCode = ui.inviteCode,
+                isLoading = ui.isLoading,
+                onInviteCodeChange = viewModel::onInviteCodeChanged,
+                onCancel = { if (!ui.isLoading) showJoinSheet = false },
+                onJoin = {
+                    viewModel.joinGroup()
+                    showJoinSheet = false
+                }
+            )
+        }
+    }
+
+    // Optional inline error/info banners as dialogs (if you want unobtrusive UX, you can remove this):
+    ui.error?.let { err ->
+        AlertDialog(
+            onDismissRequest = { /* consider clearing error in VM if desired */ },
+            confirmButton = {
+                TextButton(onClick = { /* add a clearError() in VM if you want */ }) { Text("OK") }
+            },
+            title = { Text("Error") },
+            text = { Text(err) }
+        )
     }
 }
 
 @Composable
-private fun HomeTab(ui: HomeUiState, viewModel: HomeViewModel, padding: PaddingValues) {
+private fun HomeGroupsList(
+    ui: HomeUiState,
+    viewModel: HomeViewModel,
+    padding: PaddingValues,
+    onNavigateToChat: (GroupSummary) -> Unit // Add this parameter
+) {
     Column(
         Modifier
             .fillMaxSize()
             .padding(padding)
-            .padding(16.dp)
+    ) {
+        if (ui.isFetchingGroups && ui.groups.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                LinearProgressIndicator()
+            }
+        } else {
+            if (ui.groups.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    contentPadding = PaddingValues(bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(ui.groups, key = { it.id }) { g ->
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onNavigateToChat(g) // Navigate to chat instead of selectGroup
+                                },
+                            colors = CardDefaults.elevatedCardColors(containerColor = LightGrey)
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(g.name, fontWeight = FontWeight.SemiBold, color = Charcoal)
+                                val desc = g.description ?: ""
+                                if (desc.isNotBlank()) {
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(desc, color = Black)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun CreateGroupSheetContent(
+    name: String,
+    description: String,
+    isLoading: Boolean,
+    onNameChange: (String) -> Unit,
+    onDescriptionChange: (String) -> Unit,
+    onCancel: () -> Unit,
+    onCreate: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .imePadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Create Group", style = MaterialTheme.typography.titleMedium, color = Charcoal)
-        Spacer(Modifier.height(8.dp))
         OutlinedTextField(
-            value = ui.createGroupName,
-            onValueChange = viewModel::onCreateGroupNameChanged,
+            value = name,
+            onValueChange = onNameChange,
             label = { Text("Group name") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(8.dp))
         OutlinedTextField(
-            value = ui.createGroupDescription,
-            onValueChange = viewModel::onCreateGroupDescChanged,
+            value = description,
+            onValueChange = onDescriptionChange,
             label = { Text("Description (optional)") },
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(8.dp))
-        Button(
-            onClick = viewModel::createGroup,
-            enabled = !ui.isLoading,
-            colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = White)
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
         ) {
-            Text("Create Group")
+            TextButton(onClick = onCancel, enabled = !isLoading) {
+                Text("Cancel", color = MediumGrey)
+            }
+            Spacer(Modifier.width(8.dp))
+            Button(
+                onClick = onCreate,
+                enabled = !isLoading && name.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Charcoal,
+                    contentColor = White
+                )
+            ) {
+                Text("Create")
+            }
         }
 
-        ui.inviteCodeCreated?.let {
-            Spacer(Modifier.height(8.dp))
-            AssistChip(
-                onClick = { /* copy to clipboard if you want */ },
-                label = { Text("Invite code: $it") }
-            )
+        if (isLoading) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
-
-        Spacer(Modifier.height(24.dp))
-
-        Text("Join Group", style = MaterialTheme.typography.titleMedium, color = Charcoal)
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun JoinGroupSheetContent(
+    inviteCode: String,
+    isLoading: Boolean,
+    onInviteCodeChange: (String) -> Unit,
+    onCancel: () -> Unit,
+    onJoin: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .imePadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("Join Group", style = MaterialTheme.typography.titleMedium, color = Charcoal)
         OutlinedTextField(
-            value = ui.inviteCode,
-            onValueChange = viewModel::onInviteCodeChanged,
+            value = inviteCode,
+            onValueChange = onInviteCodeChange,
             label = { Text("Invite code") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(8.dp))
-        Button(
-            onClick = viewModel::joinGroup,
-            enabled = !ui.isLoading && ui.inviteCode.isNotBlank(),
-            colors = ButtonDefaults.buttonColors(containerColor = DarkGrey, contentColor = White)
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
         ) {
-            Text("Join")
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        ui.info?.let {
-            InfoBanner(it)
-        }
-        ui.error?.let {
-            Spacer(Modifier.height(8.dp))
-            ErrorBanner(it)
-        }
-    }
-}
-
-@Composable
-private fun GroupsTab(ui: HomeUiState, viewModel: HomeViewModel, padding: PaddingValues) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(padding)
-    ) {
-        // Groups list
-        Text(
-            text = "Your Groups",
-            style = MaterialTheme.typography.titleMedium,
-            color = Charcoal,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-        )
-
-        if (ui.isFetchingGroups && ui.groups.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+            TextButton(onClick = onCancel, enabled = !isLoading) {
+                Text("Cancel", color = MediumGrey)
             }
-        } else if (ui.groups.isEmpty()) {
-            Text(
-                text = "No groups yet. Create or join a group from Home.",
-                color = MediumGrey,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            Spacer(Modifier.width(8.dp))
+            Button(
+                onClick = onJoin,
+                enabled = !isLoading && inviteCode.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Charcoal,
+                    contentColor = White
+                )
             ) {
-                items(ui.groups, key = { it.id }) { g ->
-                    ElevatedCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp)
-                            .clickable { viewModel.selectGroup(g.id) },
-                        colors = CardDefaults.elevatedCardColors(containerColor = LightGrey)
-                    ) {
-                        Column(Modifier.padding(12.dp)) {
-                            Text(g.name, fontWeight = FontWeight.SemiBold, color = Charcoal)
-                            if (!g.description.isNullOrBlank()) {
-                                Spacer(Modifier.height(4.dp))
-                                Text(g.description, color = Black)
-                            }
-                            Spacer(Modifier.height(6.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.Chat,
-                                    contentDescription = null,
-                                    tint = MediumGrey
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text(
-                                    text = "${g.message_count ?: 0} messages",
-                                    color = MediumGrey,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                        }
-                    }
-                }
+                Text("Join")
             }
         }
 
-        // Chat panel for selected group
-        ui.openGroupId?.let { gid ->
-            Divider()
-            Column(Modifier.padding(16.dp)) {
-                Text("Chat: $gid", color = Charcoal, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.height(8.dp))
-
-                if (ui.isFetchingMessages && ui.messages.isEmpty()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Loading messages...", color = MediumGrey)
-                    }
-                } else if (ui.messages.isEmpty()) {
-                    Text("No messages yet.", color = MediumGrey)
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 120.dp, max = 320.dp),
-                        contentPadding = PaddingValues(vertical = 8.dp)
-                    ) {
-                        items(ui.messages, key = { it.id }) { msg ->
-                            MessageItem(msg)
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = ui.messageInput,
-                        onValueChange = viewModel::onMessageInputChanged,
-                        label = { Text("Message") },
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    FilledIconButton(
-                        onClick = viewModel::sendMessage,
-                        enabled = !ui.isSendingMessage && ui.messageInput.isNotBlank(),
-                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Charcoal, contentColor = White)
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
-                    }
-                }
-            }
+        if (isLoading) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
-
-        ui.error?.let {
-            Spacer(Modifier.height(8.dp))
-            ErrorBanner(it)
-        }
-    }
-}
-
-//@Composable
-//private fun ProfileTab(padding: PaddingValues) {
-//    Box(
-//        Modifier
-//            .fillMaxSize()
-//            .padding(padding),
-//        contentAlignment = Alignment.Center
-//    ) {
-//        Text("Profile coming soon", color = MediumGrey)
-//    }
-//}
-
-@Composable
-private fun MessageItem(msg: Message) {
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = LightGrey)
-    ) {
-        Column(Modifier.padding(12.dp)) {
-            Text(
-                text = msg.user_name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = Charcoal
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = msg.content,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Black
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = msg.created_at,
-                style = MaterialTheme.typography.labelSmall,
-                color = MediumGrey
-            )
-        }
+        Spacer(Modifier.height(8.dp))
     }
 }
 
 @Composable
-private fun InfoBanner(text: String) {
-    Surface(color = LightGrey, tonalElevation = 1.dp) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(12.dp),
-            color = Charcoal,
-            style = MaterialTheme.typography.bodySmall
-        )
-    }
-}
-
-@Composable
-private fun ErrorBanner(text: String) {
-    Surface(color = MaterialTheme.colorScheme.errorContainer) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(12.dp),
-            color = MaterialTheme.colorScheme.onErrorContainer,
-            style = MaterialTheme.typography.bodySmall
-        )
-    }
+private fun SmallActionFab(
+    label: String,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit
+) {
+    ExtendedFloatingActionButton(
+        onClick = onClick,
+        containerColor = Charcoal,
+        contentColor = White,
+        icon = icon,
+        text = { Text(label) }
+    )
 }
