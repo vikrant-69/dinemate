@@ -1,52 +1,43 @@
 package com.hackathon.dinemate.user
 
-
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import kotlinx.coroutines.delay
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import com.hackathon.dinemate.DineMateIconOnly
+import com.hackathon.dinemate.LogoSize
+
 
 @Composable
 fun InputUserDetailsScreen(
     userId: String,
-    navController: NavController,
+    navController: NavHostController,
     userViewModel: UserViewModel,
     context: Context
 ) {
@@ -55,179 +46,260 @@ fun InputUserDetailsScreen(
     var firstNameError by remember { mutableStateOf(false) }
     var lastNameError by remember { mutableStateOf(false) }
     var userNameInvalidError by remember { mutableStateOf(false) }
+    var showSuccess by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
-    val cards = listOf(
-        "DINEMATE"
-    )
-    var currentCardIndex by remember { mutableStateOf(0) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(3000)
-            currentCardIndex = (currentCardIndex + 1) % cards.size
+    // Validate individual field
+    fun validateField(value: String, fieldName: String): String? {
+        return when {
+            value.isBlank() -> "Please enter your $fieldName"
+            value.length < 2 -> "$fieldName must be at least 2 characters"
+            else -> null
         }
     }
+
+    // Check if form is valid
+    val isFormValid = firstName.length >= 2 &&
+            lastName.length >= 2 &&
+            firstNameError == null &&
+            lastNameError == null
+
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .background(color = Color.Green)
-            .padding(16.dp)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color.Green, // Center color
-                        Color.Transparent // Fades outward
-                    ),
-                    center = Offset.Unspecified, // Automatically centers
-                    radius = 800f // Adjust the radius as needed
-                )
-            ),
+            .fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val currentText = cards[currentCardIndex]
-        val parts = currentText.split(",", limit = 2)
-        val annotatedText = buildAnnotatedString {
-            append(
-                AnnotatedString(
-                    text = parts[0] + ",",
-                    spanStyle = SpanStyle(color = Color.Red)
-                )
-            )
+        HeaderSection()
 
-            if (parts.size > 1){
-                append(
-                    AnnotatedString(
-                        text = parts[1],
-                        spanStyle = SpanStyle(color = Color.Blue)
-                    )
-                )
-            }
-        }
-        Text(
-            text = annotatedText,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            "Complete Sign In",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.Red
-        )
-
-        OutlinedTextField(
-            value = firstName,
-            onValueChange = {
-                firstName = it
-                firstNameError = it.isBlank()
-                userNameInvalidError = !it.matches(Regex("^[a-zA-Z0-9_]+\$") )
-            },
-            label = {
-                Box(
+            Column {
+                // Welcome Text
+                Text(
+                    text = "Welcome! Let's get to know you better to personalize your dining experience.",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = Color(0xFF7f8c8d),
+                        textAlign = TextAlign.Center,
+                        lineHeight = 24.sp
+                    ),
                     modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.Green)
+                        .fillMaxWidth()
+                        .padding(bottom = 32.dp)
+                )
 
+                // Success Message
+                AnimatedVisibility(
+                    visible = showSuccess,
+                    enter = slideInVertically() + fadeIn(),
+                    exit = fadeOut()
                 ) {
-                    Text(
-                        when {
-                            firstNameError -> "This field can't be empty"
-                            userNameInvalidError -> "Only letters, numbers, and underscore allowed"
-                            else -> "First Name"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (firstNameError || userNameInvalidError) Color.Red else Color.Unspecified
-                    )
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFd4edda)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "Profile created successfully! 🎉",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = Color(0xFF155724),
+                                textAlign = TextAlign.Center
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        )
+                    }
                 }
-            },
-            shape = RoundedCornerShape(16.dp),
-            isError = firstNameError || userNameInvalidError,
-//            textStyle = MaterialTheme.typography.bodyLarge.copy(color = HireColor),
-            colors = OutlinedTextFieldDefaults.colors(
-//                focusedBorderColor = Color.Black,
-//                cursorColor = HireColor, // Cursor matches text color,
-//                focusedContainerColor = LightGrayBackground,
-//                unfocusedContainerColor = LightGrayBackground,
-//                errorContainerColor = LightGrayBackground,
-//                unfocusedLabelColor = HireColor,
-//                focusedLabelColor = HireColor
-            )
-        )
 
-        OutlinedTextField(
-            value = lastName,
-            onValueChange = {
-                lastName = it
-                lastNameError = it.isBlank()
-            },
-            label = {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
+                Column (
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ){
+
+
+                    // First Name Field
+                    OutlinedTextField(
+                        value = firstName,
+                        onValueChange = {
+                            firstName = it
+                            firstNameError = it.isBlank()
+                            userNameInvalidError = !it.matches(Regex("^[a-zA-Z0-9_]+\$"))
+                        },
+                        label = {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                            ) {
+                                Text(
+                                    when {
+                                        firstNameError -> "This field can't be empty"
+                                        userNameInvalidError -> "Only letters, numbers, and underscore allowed"
+                                        else -> "First Name"
+                                    },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = if (firstNameError || userNameInvalidError) Color.Red else Color.Unspecified
+                                )
+                            }
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        isError = firstNameError || userNameInvalidError,
+                    )
+
+                    OutlinedTextField(
+                        value = lastName,
+                        onValueChange = {
+                            lastName = it
+                            lastNameError = it.isBlank()
+                        },
+                        label = {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(16.dp))
 //                        .background(LightGrayBackground)
 
-                ) {
-                    Text(
-                        when {
-                            firstNameError -> "This field can't be empty"
-                            userNameInvalidError -> "Only letters, numbers, and underscore allowed"
-                            else -> "Last Name"
+                            ) {
+                                Text(
+                                    when {
+                                        lastNameError -> "This field can't be empty"
+                                        userNameInvalidError -> "Only letters, numbers, and underscore allowed"
+                                        else -> "Last Name"
+                                    },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = if (firstNameError || userNameInvalidError) Color.Red else Color.Unspecified
+                                )
+                            }
                         },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (firstNameError || userNameInvalidError) Color.Red else Color.Unspecified
+                        shape = RoundedCornerShape(16.dp),
+                        isError = lastNameError
                     )
+
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
-            },
-            shape = RoundedCornerShape(16.dp),
-            isError = lastNameError,
-//            textStyle = MaterialTheme.typography.bodyLarge.copy(color = HireColor),
-//            colors = OutlinedTextFieldDefaults.colors(
-//                focusedBorderColor = Color.Black,
-//                cursorColor = HireColor, // Cursor matches text color,
-//                focusedContainerColor = LightGrayBackground,
-//                unfocusedContainerColor = LightGrayBackground,
-//                errorContainerColor = LightGrayBackground,
-//                unfocusedLabelColor = HireColor,
-//                focusedLabelColor = HireColor
-//            )
-        )
-        Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = {
-            firstNameError = firstName.isBlank()
-            lastNameError = lastName.isBlank()
-
-            if (firstNameError || lastNameError) {
-                return@Button
             }
 
-            userViewModel.completeInitialUserInfo(userId, firstName, lastName, context, navController)
-        },
-            colors = ButtonDefaults.buttonColors(
-//                containerColor = HireColor, // Background color
-//                contentColor = LightGrayBackground   // Text color
-            ),
-            modifier = Modifier.width(180.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Text(
-                "Create Profile",
-                style = MaterialTheme.typography.titleMedium,
-//                fontWeight = FontWeight.Bold
+            // Continue Button
+            val buttonScale by animateFloatAsState(
+                targetValue = if (isFormValid) 1f else 0.98f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
             )
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    firstNameError = firstName.isBlank()
+                    lastNameError = lastName.isBlank()
 
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = "Save Information: Move Forward",
+                    if (firstNameError || lastNameError) {
+                        return@Button
+                    }
+                    isLoading = true
+//                    userViewModel.completeInitialUserInfo(userId, firstName, lastName, context, navController)
+                },
+                enabled = isFormValid,
                 modifier = Modifier
-                    .size(30.dp)
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .scale(buttonScale),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent,
+                    disabledContainerColor = Color(0xFFbdc3c7)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = if (isFormValid) {
+                                Brush.horizontalGradient(
+                                    colors = listOf(Color(0xFFff6b6b), Color(0xFFee5a24))
+                                )
+                            } else {
+                                Brush.horizontalGradient(
+                                    colors = listOf(Color(0xFFbdc3c7), Color(0xFFbdc3c7))
+                                )
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Text(
+                            text = "Continue to Preferences",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+}
+
+@Composable
+private fun HeaderSection() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        Row (
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ){
+            DineMateIconOnly(
+                size = LogoSize.Medium,
+                showAnimation = true
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(color = Color(0xFFFF6B6B))) {
+                        append("Dine")
+                    }
+                    withStyle(SpanStyle(color = Color(0xFF4ECDC4))) {
+                        append("Mate")
+                    }
+                },
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
             )
         }
+
+        Icon(
+            imageVector = Icons.Default.Restaurant,
+            contentDescription = "Dining",
+            tint = Color.White,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(28.dp)
+        )
     }
 }
+
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun InputUserDetailsScreenPreview() {
+//    MaterialTheme {
+//        UserDetailsScreen(
+////            "lol",
+//////            NavController,
+////            userViewModel = TODO(),
+////            context = TODO(),
+//        )
+//    }
+//}

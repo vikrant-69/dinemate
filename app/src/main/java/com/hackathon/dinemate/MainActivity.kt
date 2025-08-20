@@ -98,15 +98,7 @@ fun AppNavigation(
     if (isAuthChecked) {
         NavHost(navController = navController, startDestination = startDestination) {
             composable("signInScreen") {
-                SignInScreen(navController, context)
-            }
-
-            composable(
-                "inputUserDetails/{userId}",
-                arguments = listOf(navArgument("userId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val userId = backStackEntry.arguments?.getString("userId") ?: ""
-                InputUserDetailsScreen(userId, navController, userViewModel, context)
+                SignInScreen(userViewModel, navController, context)
             }
 
             composable(
@@ -128,7 +120,8 @@ fun AppNavigation(
                 val userId = backStackEntry.arguments?.getString("userId") ?: ""
                 HomeScreen(
                     userId = userId,
-                    baseURL = AppConfig.BASE_URL
+                    baseURL = AppConfig.BASE_URL,
+                    userViewModel = userViewModel
                 )
             }
         }
