@@ -13,5 +13,8 @@ data class User(
     var firstName: String = "",
 
     @get:PropertyName("lastName") @set:PropertyName("lastName")
-    var lastName: String = ""
+    var lastName: String = "",
+
+    @get:PropertyName("profilePic") @set:PropertyName("profilePic")
+    var profilePic: String? = null
 )

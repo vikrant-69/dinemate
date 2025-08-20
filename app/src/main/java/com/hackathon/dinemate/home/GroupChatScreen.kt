@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hackathon.dinemate.config.AppConfig
@@ -24,7 +25,9 @@ import com.hackathon.dinemate.ui.theme.Charcoal
 import com.hackathon.dinemate.ui.theme.LightGrey
 import com.hackathon.dinemate.ui.theme.MediumGrey
 import com.hackathon.dinemate.ui.theme.White
-
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +97,9 @@ fun GroupChatScreen(
                     CircularProgressIndicator()
                 }
             } else {
-                // Messages list
+                // Messages list with date separators
+                val messagesWithDateSeparators = insertDateSeparators(ui.messages)
+
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
@@ -103,11 +108,21 @@ fun GroupChatScreen(
                         .padding(horizontal = 12.dp),
                     contentPadding = PaddingValues(vertical = 12.dp)
                 ) {
-                    items(ui.messages, key = { it.id }) { msg ->
-                        MessageBubble(
-                            message = msg,
-                            isMine = msg.user_id == userId
-                        )
+                    items(messagesWithDateSeparators, key = { it.id }) { msg ->
+                        when (msg.message_type) {
+                            "system" -> {
+                                SystemMessage(content = msg.content)
+                            }
+                            "date_separator" -> {
+                                DateSeparator(date = msg.content)
+                            }
+                            else -> {
+                                MessageBubble(
+                                    message = msg,
+                                    isMine = msg.user_id == userId
+                                )
+                            }
+                        }
                         Spacer(Modifier.height(8.dp))
                     }
                 }
@@ -191,11 +206,117 @@ private fun MessageBubble(
                 Text(message.content, color = textColor)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    message.created_at,
+                    formatTime(message.created_at),
                     color = if (isMine) White.copy(alpha = 0.7f) else MediumGrey,
                     style = MaterialTheme.typography.labelSmall
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun SystemMessage(content: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.small,
+            color = MediumGrey.copy(alpha = 0.2f),
+            modifier = Modifier.padding(vertical = 4.dp)
+        ) {
+            Text(
+                text = content,
+                color = MediumGrey,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun DateSeparator(date: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.small,
+            color = Charcoal.copy(alpha = 0.1f),
+            modifier = Modifier.padding(vertical = 8.dp)
+        ) {
+            Text(
+                text = formatDate(date),
+                color = Charcoal,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+    }
+}
+
+// Helper function to format timestamp to HH:mm
+private fun formatTime(timestamp: String): String {
+    return try {
+        val dateTime = LocalDateTime.parse(timestamp)
+        dateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
+    } catch (e: DateTimeParseException) {
+        timestamp
+    }
+}
+
+// Helper function to format date
+private fun formatDate(dateString: String): String {
+    return try {
+        val date = LocalDateTime.parse(dateString + "T00:00:00")
+        date.format(DateTimeFormatter.ofPattern("MMMM dd, yyyy"))
+    } catch (e: Exception) {
+        dateString
+    }
+}
+
+// Helper function to insert date separators between messages
+private fun insertDateSeparators(messages: List<Message>): List<Message> {
+    val result = mutableListOf<Message>()
+    var lastDate: String? = null
+
+    messages.forEach { message ->
+        val messageDate = extractDate(message.created_at)
+
+        if (messageDate != lastDate) {
+            // Insert date separator
+            result.add(
+                Message(
+                    id = "date_separator_$messageDate",
+                    group_id = message.group_id,
+                    user_id = "",
+                    user_name = "",
+                    message_type = "date_separator",
+                    content = messageDate,
+                    restaurant_data = null,
+                    created_at = messageDate
+                )
+            )
+            lastDate = messageDate
+        }
+
+        result.add(message)
+    }
+
+    return result
+}
+
+// Helper function to extract date from timestamp
+private fun extractDate(timestamp: String): String {
+    return try {
+        val dateTime = LocalDateTime.parse(timestamp)
+        dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    } catch (e: DateTimeParseException) {
+        timestamp.substring(0, 10) // fallback to first 10 characters
     }
 }

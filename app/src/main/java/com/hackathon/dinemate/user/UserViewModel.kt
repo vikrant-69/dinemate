@@ -13,7 +13,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.auth.User
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
@@ -37,10 +37,12 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     private var baseURL: String = AppConfig.BASE_URL
 
     private val _user = MutableStateFlow<User?>(null)
+
     @SuppressLint("RestrictedApi")
     val user: StateFlow<User?> = _user
 
-    private val userPrefs = application.getSharedPreferences("UserProfileCache", Context.MODE_PRIVATE)
+    private val userPrefs =
+        application.getSharedPreferences("UserProfileCache", Context.MODE_PRIVATE)
     private val authPrefs = application.getSharedPreferences("UserAuthPrefs", Context.MODE_PRIVATE)
 
     private val googleSignInClient: GoogleSignInClient
@@ -52,7 +54,23 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             .build()
 
         googleSignInClient = GoogleSignIn.getClient(application, gso)
+        loadUserFromPreferences()
+    }
 
+    private fun loadUserFromPreferences() {
+        val userJson = userPrefs.getString(PREF_USER_JSON, null)
+        if (userJson != null) {
+            try {
+                val cachedUser = gson.fromJson(userJson, User::class.java)
+                _user.value = cachedUser
+                Log.d(
+                    "UserViewModel",
+                    "Loaded user from SharedPreferences cache: ${_user.value?.userId}"
+                )
+            } catch (e: Exception) {
+                Log.e("UserViewModel", "Error deserializing user from SharedPreferences", e)
+            }
+        }
     }
 
     private fun clearUserPreferences() {
@@ -72,22 +90,26 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateUserProfile(userId: String, firstName: String, lastName: String, headline: String, location: String){
-        val updates = hashMapOf<String, Any>(
-            "firstName" to firstName,
-            "lastName" to lastName,
-            "headline" to headline,
-            "location" to location
-        )
+    @SuppressLint("RestrictedApi")
+    fun saveUserProfile(user: User, context: Context) {
+        viewModelScope.launch {
+            try {
+                db.collection(USERS_COLLECTION).document(user.userId)
+                    .set(user, SetOptions.merge()).await()
 
-        db.collection("hireinn_users").document(userId)
-            .update(updates)
-            .addOnSuccessListener {
-                Log.d("ProfileViewModel", "Profile updated successfully")
+                Log.d("USER INFO", user.toString())
+                _user.value = user
+                saveUserToPreferences(user) // Save to cache here
+
+                Toast.makeText(context, "Sigin Completed", Toast.LENGTH_SHORT).show()
+                Log.d("UserViewModel", "User profile saved to Firestore.")
+
+            } catch (e: Exception) {
+                Log.e("UserViewModel", "Error saving user profile to Firestore", e)
+                Toast.makeText(context, "Error in Google Signin. Check Later", Toast.LENGTH_SHORT)
+                    .show()
             }
-            .addOnFailureListener { e ->
-                Log.e("ProfileViewModel", "Error updating profile", e)
-            }
+        }
     }
 
     fun getCurrentUserId(): String? {
@@ -125,7 +147,13 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun completeInitialUserInfo(userId: String, firstName: String, lastName: String, context: Context, navController: NavController){
+    fun completeInitialUserInfo(
+        userId: String,
+        firstName: String,
+        lastName: String,
+        context: Context,
+        navController: NavController
+    ) {
         viewModelScope.launch {
             val userMap = hashMapOf(
                 "userId" to userId,
@@ -154,11 +182,19 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 )
 
                 if (!apiRegistrationSuccess) {
-                    Log.w("UserViewModel", "API registration failed, but continuing with local setup")
-                    Toast.makeText(context, "Profile created locally, but server registration failed", Toast.LENGTH_SHORT).show()
+                    Log.w(
+                        "UserViewModel",
+                        "API registration failed, but continuing with local setup"
+                    )
+                    Toast.makeText(
+                        context,
+                        "Profile created locally, but server registration failed",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } else {
                     Log.d("UserViewModel", "User successfully registered with backend API")
-                    Toast.makeText(context, "Profile created successfully!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Profile created successfully!", Toast.LENGTH_SHORT)
+                        .show()
                 }
 
                 authPrefs.edit().apply {
@@ -178,7 +214,8 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
             } catch (e: Exception) {
                 Log.e("UserViewModel", "Error completing initial user info", e)
-                Toast.makeText(context, "Error saving details: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Error saving details: ${e.message}", Toast.LENGTH_LONG)
+                    .show()
             }
         }
     }
@@ -187,7 +224,12 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         return FirebaseAuth.getInstance().currentUser?.email
     }
 
-    fun saveProfilePicture(context: Context, userId: String, imageUri: Uri, onComplete: (Boolean, String) -> Unit) {
+    fun saveProfilePicture(
+        context: Context,
+        userId: String,
+        imageUri: Uri,
+        onComplete: (Boolean, String) -> Unit
+    ) {
         val storageRef = storage.reference.child("dinemate_users/$userId/profile/profile_pic.jpg")
 
         storageRef.putFile(imageUri)
@@ -213,6 +255,8 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         googleSignInClient.signOut().addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 auth.signOut()
+                clearUserPreferences()
+                _user.value = null
                 onComplete?.invoke()
             } else {
                 onError?.invoke(task.exception ?: Exception("Unknown error during sign-out"))

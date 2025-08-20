@@ -1,401 +1,473 @@
-package com.hackathon.dinemate
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
-
-@Composable
-fun GoogleSignInScreen() {
-    var isLoading by remember { mutableStateOf(false) }
-    var isSuccess by remember { mutableStateOf(false) }
-
-    // Floating animation
-    val infiniteTransition = rememberInfiniteTransition(label = "floating")
-    val floatAnimation1 by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = -20f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ), label = "float1"
-    )
-
-    val floatAnimation2 by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 15f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ), label = "float2"
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFF667eea),
-                        Color(0xFF764ba2)
-                    )
-                )
-            )
-    ) {
-        // Floating decoration circles
-        FloatingCircle(
-            color = Color(0xFFFF6B6B).copy(alpha = 0.1f),
-            size = 40.dp,
-            offset = Offset(0.1f, 0.2f),
-            animationOffset = floatAnimation1
-        )
-
-        FloatingCircle(
-            color = Color(0xFF4ECDC4).copy(alpha = 0.1f),
-            size = 60.dp,
-            offset = Offset(0.85f, 0.7f),
-            animationOffset = floatAnimation2
-        )
-
-        FloatingCircle(
-            color = Color(0xFF4285F4).copy(alpha = 0.1f),
-            size = 30.dp,
-            offset = Offset(0.8f, 0.4f),
-            animationOffset = floatAnimation1 * 0.5f
-        )
-
-        // Main content
-        Card(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 20.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(60.dp))
-
-                // Logo with shimmer effect
-                DineMateLogo()
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // App name
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(SpanStyle(color = Color(0xFFFF6B6B))) {
-                            append("Dine")
-                        }
-                        withStyle(SpanStyle(color = Color(0xFF4ECDC4))) {
-                            append("Mate")
-                        }
-                    },
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.5).sp
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Tagline
-                Text(
-                    text = "Your trusted dining companion",
-                    color = Color(0xFF6B7280),
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // Welcome text
-                Text(
-                    text = "Welcome!",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1A1A1A)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Sign in to discover amazing restaurants tailored just for you",
-                    color = Color(0xFF6B7280),
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 24.sp
-                )
-
-                Spacer(modifier = Modifier.height(40.dp))
-
-                // Google Sign-In Button
-                GoogleSignInButton(
-                    isLoading = isLoading,
-                    isSuccess = isSuccess,
-                    onClick = {
-                        if (!isLoading) {
-                            isLoading = true
-                            // Simulate sign-in process
-                            LaunchedEffect(isLoading) {
-                                delay(2000)
-                                isSuccess = true
-                                delay(1500)
-                                // Reset state (in real app, navigate to main screen)
-                                isLoading = false
-                                isSuccess = false
-                            }
-                        }
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Divider
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Divider(
-                        modifier = Modifier.weight(1f),
-                        color = Color(0xFFE5E7EB)
-                    )
-                    Text(
-                        text = "Secure & Fast",
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = Color(0xFF9CA3AF),
-                        fontSize = 14.sp
-                    )
-                    Divider(
-                        modifier = Modifier.weight(1f),
-                        color = Color(0xFFE5E7EB)
-                    )
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Terms text
-                Text(
-                    text = "By continuing, you agree to our Terms of Service and Privacy Policy",
-                    color = Color(0xFF9CA3AF),
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 18.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun DineMateLogo() {
-    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
-    val shimmerAnimation by infiniteTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing)
-        ), label = "shimmer"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(80.dp)
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFFFF6B6B),
-                        Color(0xFFFF8E53)
-                    )
-                ),
-                shape = RoundedCornerShape(20.dp)
-            )
-            .clip(RoundedCornerShape(20.dp)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "🍽️",
-            fontSize = 36.sp
-        )
-
-        // Shimmer overlay
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.White.copy(alpha = 0.3f),
-                            Color.Transparent
-                        ),
-                        start = androidx.compose.ui.geometry.Offset(
-                            shimmerAnimation * 200,
-                            shimmerAnimation * 200
-                        ),
-                        end = androidx.compose.ui.geometry.Offset(
-                            (shimmerAnimation + 0.5f) * 200,
-                            (shimmerAnimation + 0.5f) * 200
-                        )
-                    )
-                )
-        )
-    }
-}
-
-@Composable
-fun GoogleSignInButton(
-    isLoading: Boolean,
-    isSuccess: Boolean,
-    onClick: @Composable () -> Unit
-) {
-    val backgroundColor by animateColorAsState(
-        targetValue = when {
-            isSuccess -> Color(0xFF4285F4)
-            else -> Color.White
-        },
-        animationSpec = tween(300), label = "bg_color"
-    )
-
-    val textColor by animateColorAsState(
-        targetValue = when {
-            isSuccess -> Color.White
-            else -> Color(0xFF374151)
-        },
-        animationSpec = tween(300), label = "text_color"
-    )
-
-    val borderColor by animateColorAsState(
-        targetValue = when {
-            isSuccess -> Color(0xFF4285F4)
-            else -> Color(0xFFE5E7EB)
-        },
-        animationSpec = tween(300), label = "border_color"
-    )
-
-    Button(
-        onClick = { onClick },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .border(
-                width = 2.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(16.dp)
-            ),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = backgroundColor
-        ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = if (isSuccess) 8.dp else 0.dp
-        )
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp,
-                    color = Color(0xFF4285F4)
-                )
-            } else {
-
-                // Google Icon (you would use actual Google logo here)
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .background(Color.Transparent),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("G", color = Color(0xFF4285F4), fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Text(
-                text = when {
-                    isLoading -> "Signing in..."
-                    isSuccess -> "Success! Redirecting..."
-                    else -> "Continue with Google"
-                },
-                color = textColor,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-    }
-}
-
-@Composable
-fun FloatingCircle(
-    color: Color,
-    size: Dp,
-    offset: Offset,
-    animationOffset: Float
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .wrapContentSize(Alignment.TopStart)
-            .offset(
-                x = (offset.x * 400).dp,
-                y = (offset.y * 800 + animationOffset).dp
-            )
-    ) {
-        Box(
-            modifier = Modifier
-                .size(size)
-                .background(
-                    color = color,
-                    shape = CircleShape
-                )
-        )
-    }
-}
-
-data class Offset(val x: Float, val y: Float)
-
-@Preview(showBackground = true)
-@Composable
-fun GoogleSignInScreenPreview() {
-    MaterialTheme {
-        GoogleSignInScreen()
-    }
-}
+//package com.hackathon.dinemate
+//
+//import android.os.Bundle
+//import androidx.activity.ComponentActivity
+//import androidx.activity.compose.setContent
+//import androidx.compose.foundation.background
+//import androidx.compose.foundation.layout.Arrangement
+//import androidx.compose.foundation.layout.Column
+//import androidx.compose.foundation.layout.ExperimentalLayoutApi
+//import androidx.compose.foundation.layout.FlowRow
+//import androidx.compose.foundation.layout.Row
+//import androidx.compose.foundation.layout.Spacer
+//import androidx.compose.foundation.layout.fillMaxSize
+//import androidx.compose.foundation.layout.fillMaxWidth
+//import androidx.compose.foundation.layout.height
+//import androidx.compose.foundation.layout.navigationBarsPadding
+//import androidx.compose.foundation.layout.padding
+//import androidx.compose.foundation.layout.size
+//import androidx.compose.foundation.layout.width
+//import androidx.compose.foundation.rememberScrollState
+//import androidx.compose.foundation.shape.CircleShape
+//import androidx.compose.foundation.text.KeyboardActions
+//import androidx.compose.foundation.text.KeyboardOptions
+//import androidx.compose.foundation.verticalScroll
+//import androidx.compose.material.icons.Icons
+//import androidx.compose.material.icons.filled.Edit
+//import androidx.compose.material.icons.filled.Restaurant
+//import androidx.compose.material3.Button
+//import androidx.compose.material3.Card
+//import androidx.compose.material3.CardDefaults
+//import androidx.compose.material3.Divider
+//import androidx.compose.material3.ExperimentalMaterial3Api
+//import androidx.compose.material3.FilterChip
+//import androidx.compose.material3.Icon
+//import androidx.compose.material3.MaterialTheme
+//import androidx.compose.material3.OutlinedTextField
+//import androidx.compose.material3.Scaffold
+//import androidx.compose.material3.SnackbarHost
+//import androidx.compose.material3.SnackbarHostState
+//import androidx.compose.material3.Switch
+//import androidx.compose.material3.Text
+//import androidx.compose.material3.TextButton
+//import androidx.compose.material3.TopAppBar
+//import androidx.compose.runtime.Composable
+//import androidx.compose.runtime.LaunchedEffect
+//import androidx.compose.runtime.getValue
+//import androidx.compose.runtime.mutableStateOf
+//import androidx.compose.runtime.remember
+//import androidx.compose.runtime.rememberCoroutineScope
+//import androidx.compose.runtime.saveable.rememberSaveable
+//import androidx.compose.runtime.setValue
+//import androidx.compose.ui.Alignment
+//import androidx.compose.ui.Modifier
+//import androidx.compose.ui.draw.clip
+//import androidx.compose.ui.graphics.Color
+//import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+//import androidx.compose.ui.text.font.FontWeight
+//import androidx.compose.ui.text.input.ImeAction
+//import androidx.compose.ui.text.input.KeyboardCapitalization
+//import androidx.compose.ui.text.input.KeyboardType
+//import androidx.compose.ui.text.style.TextAlign
+//import androidx.compose.ui.tooling.preview.Preview
+//import androidx.compose.ui.unit.dp
+//import kotlinx.coroutines.launch
+//
+///** Profile domain model */
+//data class UserProfile(
+//    val firstName: String = "",
+//    val secondName: String = "",
+//    val email: String = "",
+//    val phone: String = "",
+//    val dietaryPreference: DietaryPreference = DietaryPreference.None,
+//    val favoriteCuisines: Set<String> = emptySet(),
+//    val notifyOrders: Boolean = true,
+//    val notifyPromos: Boolean = false
+//)
+//
+//enum class DietaryPreference { None, Vegetarian, Vegan, NonVegetarian, Eggetarian }
+//
+//class ProfileActivity : ComponentActivity() {
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        setContent {
+//            DiningAppTheme {
+//                UserProfileRoute(
+//                    initial = UserProfile(
+//                        firstName = "Aarav",
+//                        secondName = "Shah",
+//                        email = "aarav@example.com",
+//                        phone = "9876543210",
+//                        dietaryPreference = DietaryPreference.Vegetarian,
+//                        favoriteCuisines = setOf("Indian", "Italian"),
+//                        notifyOrders = true,
+//                        notifyPromos = true
+//                    ),
+//                    onSave = { updated ->
+//                        // TODO: Persist to Firebase/Room and navigate back
+//                        println("Saved profile: ${'$'}updated")
+//                    },
+//                    onLogout = { println("Logout clicked") }
+//                )
+//            }
+//        }
+//    }
+//}
+//
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun UserProfileRoute(
+//    initial: UserProfile,
+//    onSave: (UserProfile) -> Unit,
+//    onLogout: () -> Unit = {}
+//) {
+//    val snackbar = remember { SnackbarHostState() }
+//    val scope = rememberCoroutineScope()
+//
+//    var form by rememberSaveable(stateSaver = UserProfileSaver) { mutableStateOf(initial) }
+//    val isValid = remember(form) {
+//        validateName(form.firstName) == null &&
+//                validateName(form.secondName) == null &&
+//                validateEmail(form.email) == null &&
+//                validatePhone(form.phone) == null
+//    }
+//
+//    Scaffold(
+//        topBar = {
+//            TopAppBar(
+//                title = {
+//                    Column {
+//                        Text("Profile", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+//                        Text("Manage your dining identity", style = MaterialTheme.typography.bodySmall)
+//                    }
+//                },
+//                navigationIcon = {
+//                    Icon(Icons.Default.Restaurant, contentDescription = null)
+//                }
+//            )
+//        },
+//        snackbarHost = { SnackbarHost(snackbar) },
+//        bottomBar = {
+//            Card(
+//                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+//                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+//            ) {
+//                Column(Modifier.fillMaxWidth().padding(16.dp)) {
+//                    Button(
+//                        onClick = {
+//                            onSave(form)
+//                            scope.launch { snackbar.showSnackbar("Profile saved") }
+//                        },
+//                        enabled = isValid,
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) { Text("Save changes") }
+//                    TextButton(onClick = onLogout, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+//                        Text("Log out")
+//                    }
+//                }
+//            }
+//        }
+//    ) { padding ->
+//        UserProfileScreen(
+//            modifier = Modifier
+//                .padding(padding)
+//                .navigationBarsPadding()
+//                .fillMaxSize(),
+//            value = form,
+//            onChange = { form = it }
+//        )
+//    }
+//}
+//
+//@OptIn(ExperimentalLayoutApi::class)
+//@Composable
+//fun UserProfileScreen(
+//    modifier: Modifier = Modifier,
+//    value: UserProfile,
+//    onChange: (UserProfile) -> Unit
+//) {
+//    val keyboard = LocalSoftwareKeyboardController.current
+//    val scroll = rememberScrollState()
+//
+//    val cuisines = remember {
+//        listOf(
+//            "Indian", "Chinese", "Italian", "Mexican", "Thai", "Japanese",
+//            "Mediterranean", "American", "South Indian", "Punjabi", "Bengali"
+//        )
+//    }
+//
+//    Column(
+//        modifier = modifier
+//            .padding(horizontal = 20.dp)
+//            .verticalScroll(scroll),
+//        verticalArrangement = Arrangement.spacedBy(20.dp)
+//    ) {
+//        Spacer(Modifier.height(12.dp))
+//        ProfileHeader(
+//            firstName = value.firstName,
+//            secondName = value.secondName,
+//            onEdit = { /* Hook up image picker if needed */ }
+//        )
+//
+//        Section(title = "Personal info") {
+//            LabeledTextField(
+//                label = "First name",
+//                value = value.firstName,
+//                onValueChange = { onChange(value.copy(firstName = sanitizeName(it))) },
+//                error = validateName(value.firstName),
+//                ime = ImeAction.Next
+//            )
+//            LabeledTextField(
+//                label = "Second name",
+//                value = value.secondName,
+//                onValueChange = { onChange(value.copy(secondName = sanitizeName(it))) },
+//                error = validateName(value.secondName),
+//                ime = ImeAction.Next
+//            )
+//            LabeledTextField(
+//                label = "Email",
+//                value = value.email,
+//                onValueChange = { onChange(value.copy(email = it.trim())) },
+//                error = validateEmail(value.email),
+//                keyboardType = KeyboardType.Email,
+//                ime = ImeAction.Next
+//            )
+//            LabeledTextField(
+//                label = "Phone",
+//                value = value.phone,
+//                onValueChange = { onChange(value.copy(phone = it.filter { c -> c.isDigit() }.take(15))) },
+//                error = validatePhone(value.phone),
+//                keyboardType = KeyboardType.Phone,
+//                ime = ImeAction.Done,
+//                onDone = { keyboard?.hide() }
+//            )
+//        }
+//
+//        Section(title = "Preferences") {
+//            Text("Dietary preference", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+//            Spacer(Modifier.height(8.dp))
+//            RadioRow(
+//                selected = value.dietaryPreference,
+//                options = listOf(
+//                    DietaryPreference.None to "None",
+//                    DietaryPreference.Vegetarian to "Vegetarian",
+//                    DietaryPreference.Vegan to "Vegan",
+//                    DietaryPreference.Eggetarian to "Eggetarian",
+//                    DietaryPreference.NonVegetarian to "Non‑vegetarian"
+//                ),
+//                onSelect = { onChange(value.copy(dietaryPreference = it)) }
+//            )
+//
+//            Spacer(Modifier.height(12.dp))
+//            Text("Favourite cuisines", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+//            Spacer(Modifier.height(6.dp))
+//            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+//                cuisines.forEach { c ->
+//                    val selected = c in value.favoriteCuisines
+//                    FilterChip(
+//                        selected = selected,
+//                        onClick = {
+//                            val next = value.favoriteCuisines.toMutableSet().apply {
+//                                if (selected) remove(c) else add(c)
+//                            }
+//                            onChange(value.copy(favoriteCuisines = next))
+//                        },
+//                        label = { Text(c) }
+//                    )
+//                }
+//            }
+//        }
+//
+//        Section(title = "Notifications") {
+//            SwitchRow(
+//                title = "Order updates",
+//                subtitle = "Track confirmations and delivery status",
+//                checked = value.notifyOrders,
+//                onCheckedChange = { onChange(value.copy(notifyOrders = it)) }
+//            )
+//            SwitchRow(
+//                title = "Offers & promos",
+//                subtitle = "Personalised deals and dining tips",
+//                checked = value.notifyPromos,
+//                onCheckedChange = { onChange(value.copy(notifyPromos = it)) }
+//            )
+//        }
+//
+//        Spacer(Modifier.height(90.dp)) // bottom bar space
+//    }
+//}
+//
+//@Composable
+//private fun Section(title: String, content: @Composable () -> Unit) {
+//    Column(Modifier.fillMaxWidth()) {
+//        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+//        Spacer(Modifier.height(8.dp))
+//        Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+//            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+//                content()
+//            }
+//        }
+//    }
+//}
+//
+//@Composable
+//private fun LabeledTextField(
+//    label: String,
+//    value: String,
+//    onValueChange: (String) -> Unit,
+//    error: String? = null,
+//    keyboardType: KeyboardType = KeyboardType.Text,
+//    ime: ImeAction = ImeAction.Next,
+//    onDone: (() -> Unit)? = null
+//) {
+//    OutlinedTextField(
+//        value = value,
+//        onValueChange = onValueChange,
+//        label = { Text(label) },
+//        isError = error != null,
+//        supportingText = { error?.let { Text(it) } },
+//        singleLine = true,
+//        keyboardOptions = KeyboardOptions(
+//            capitalization = if (keyboardType == KeyboardType.Text) KeyboardCapitalization.Words else KeyboardCapitalization.None,
+//            keyboardType = keyboardType,
+//            imeAction = ime
+//        ),
+//        keyboardActions = KeyboardActions(
+//            onDone = { onDone?.invoke() }
+//        ),
+//        modifier = Modifier.fillMaxWidth()
+//    )
+//}
+//
+//@Composable
+//private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+//    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+//        Column(Modifier.weight(1f)) {
+//            Text(title, style = MaterialTheme.typography.bodyLarge)
+//            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+//        }
+//        Switch(checked = checked, onCheckedChange = onCheckedChange)
+//    }
+//}
+//
+//@Composable
+//private fun RadioRow(
+//    selected: DietaryPreference,
+//    options: List<Pair<DietaryPreference, String>>,
+//    onSelect: (DietaryPreference) -> Unit
+//) {
+//    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+//        options.forEach { (value, label) ->
+//            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+//                androidx.compose.material3.RadioButton(
+//                    selected = selected == value,
+//                    onClick = { onSelect(value) }
+//                )
+//                Text(label)
+//            }
+//        }
+//    }
+//}
+//
+//@Composable
+//private fun ProfileHeader(firstName: String, secondName: String, onEdit: () -> Unit) {
+//    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+//        val initials = initialsForName(firstName, secondName)
+//        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+//            Column(
+//                modifier = Modifier
+//                    .size(80.dp)
+//                    .clip(CircleShape)
+//                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+//                horizontalAlignment = Alignment.CenterHorizontally,
+//                verticalArrangement = Arrangement.Center
+//            ) {
+//                Text(
+//                    initials,
+//                    style = MaterialTheme.typography.headlineSmall,
+//                    fontWeight = FontWeight.Bold,
+//                    textAlign = TextAlign.Center,
+//                    color = MaterialTheme.colorScheme.primary
+//                )
+//            }
+//            TextButton(onClick = onEdit) { Icon(Icons.Default.Edit, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Change") }
+//        }
+//        Column(Modifier.weight(1f)) {
+//            Text("${'$'}firstName ${'$'}secondName", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+//            Text("Make dining yours", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+//        }
+//    }
+//}
+//
+///*********** Helpers & Validation ***********/
+//private fun initialsForName(first: String, second: String): String {
+//    val f = first.trim().firstOrNull()?.uppercase() ?: "?"
+//    val s = second.trim().firstOrNull()?.uppercase() ?: ""
+//    return "$f$s"
+//}
+//
+//private fun validateName(value: String): String? {
+//    val v = value.trim()
+//    if (v.isEmpty()) return "Required"
+//    val pattern = Regex("^[\u00C0-\u017Fa-zA-Z .'-]{1,40}$")
+//    return if (!pattern.matches(v)) "Only letters, spaces, .' - (max 40)" else null
+//}
+//
+//private fun validateEmail(value: String): String? {
+//    if (value.isBlank()) return null // optional
+//    // Simple RFC-like email pattern
+//    val pattern = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+//    return if (!pattern.matches(value)) "Invalid email" else null
+//}
+//
+//private fun validatePhone(value: String): String? {
+//    if (value.isBlank()) return null // optional
+//    val digits = value.filter { it.isDigit() }
+//    return if (digits.length in 7..15) null else "Invalid phone"
+//}
+//
+//private fun sanitizeName(input: String): String = input.replace(Regex("\\s+"), " ").trimStart()
+//
+///*********** Saver for UserProfile (so rememberSaveable works) ***********/
+//private val UserProfileSaver = androidx.compose.runtime.saveable.Saver<UserProfile, List<Any>>(
+//    save = {
+//        listOf(
+//            it.firstName, it.secondName, it.email, it.phone,
+//            it.dietaryPreference.name, it.favoriteCuisines.toList(), it.notifyOrders, it.notifyPromos
+//        )
+//    },
+//    restore = {
+//        @Suppress("UNCHECKED_CAST")
+//        UserProfile(
+//            firstName = it[0] as String,
+//            secondName = it[1] as String,
+//            email = it[2] as String,
+//            phone = it[3] as String,
+//            dietaryPreference = DietaryPreference.valueOf(it[4] as String),
+//            favoriteCuisines = (it[5] as List<String>).toSet(),
+//            notifyOrders = it[6] as Boolean,
+//            notifyPromos = it[7] as Boolean
+//        )
+//    }
+//)
+//
+///**************** THEME & PREVIEW ****************/
+//@Composable
+//fun DiningAppTheme(content: @Composable () -> Unit) {
+//    MaterialTheme(
+//        colorScheme = androidx.compose.material3.lightColorScheme(),
+//        typography = androidx.compose.material3.Typography(),
+//        content = content
+//    )
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//private fun ProfilePreview() {
+//    DiningAppTheme {
+//        UserProfileRoute(
+//            initial = UserProfile(
+//                firstName = "Aarav",
+//                secondName = "Shah",
+//                email = "aarav@example.com",
+//                phone = "9876543210",
+//                dietaryPreference = DietaryPreference.Vegetarian,
+//                favoriteCuisines = setOf("Indian", "Italian"),
+//                notifyOrders = true,
+//                notifyPromos = false
+//            ),
+//            onSave = {},
+//            onLogout = {}
+//        )
+//    }
+//}

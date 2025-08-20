@@ -29,12 +29,11 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.hackathon.dinemate.home.GroupChatScreen
-import com.hackathon.dinemate.user.InputUserDetailsScreen
+import com.hackathon.dinemate.home.HomeScreen
+import com.hackathon.dinemate.questionnaire.QuestionnaireScreen
 import com.hackathon.dinemate.signin.SignInScreen
 import com.hackathon.dinemate.ui.theme.DineMateTheme
 import com.hackathon.dinemate.user.UserViewModel
-import com.hackathon.dinemate.home.HomeScreen
-import com.hackathon.dinemate.questionnaire.QuestionnaireScreen
 
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -102,14 +101,6 @@ fun AppNavigation(
             }
 
             composable(
-                "inputUserDetails/{userId}",
-                arguments = listOf(navArgument("userId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val userId = backStackEntry.arguments?.getString("userId") ?: ""
-                InputUserDetailsScreen(userId, navController, userViewModel, context)
-            }
-
-            composable(
                 "questionnaire/{userId}",
                 arguments = listOf(navArgument("userId") { type = NavType.StringType })
             ) { backStackEntry ->
@@ -135,7 +126,8 @@ fun AppNavigation(
                         navController.navigate(
                             "groupChat/${group.id}/${group.name}/${group.invite_code ?: ""}/${userId}"
                         )
-                    }
+                    },
+                    userViewModel = userViewModel
                 )
             }
 
