@@ -4,15 +4,19 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
+import java.time.LocalTime
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
+import com.google.gson.JsonObject
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -21,6 +25,7 @@ import com.google.gson.Gson
 import com.hackathon.dinemate.R
 import com.hackathon.dinemate.config.AppConfig
 import com.hackathon.dinemate.util.HttpUtil
+import com.hackathon.dinemate.util.RequestType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -91,7 +96,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     @SuppressLint("RestrictedApi")
-    fun saveUserProfile(user: User, context: Context) {
+    fun saveUserProfile(user: User, context: Context, navController: NavController) {
         viewModelScope.launch {
             try {
                 db.collection(USERS_COLLECTION).document(user.userId)
@@ -99,9 +104,22 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
                 Log.d("USER INFO", user.toString())
                 _user.value = user
+
+                val resultPair = registerUserWithAPI(
+                    email = user.userName +  "@gmail.com",
+                    firebaseId = user.userId,
+                    username = user.userName,
+                    fullName = user.name
+                )
                 saveUserToPreferences(user) // Save to cache here
 
                 Toast.makeText(context, "Sigin Completed", Toast.LENGTH_SHORT).show()
+
+                if (resultPair.second){
+                    navController.navigate("questionnaire/${user.userId}")
+                }else{
+                    navController.navigate("homeScreen/${user.userId}")
+                }
                 Log.d("UserViewModel", "User profile saved to Firestore.")
 
             } catch (e: Exception) {
@@ -116,12 +134,12 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         return auth.currentUser?.uid
     }
 
-    private suspend fun registerUserWithAPI(
+    suspend fun registerUserWithAPI(
         email: String,
         firebaseId: String,
         username: String,
         fullName: String
-    ): Boolean {
+    ): Pair<Boolean, Boolean> {
         return try {
             val url = "${baseURL.trimEnd('/')}/api/v1/auth/register"
 
@@ -139,84 +157,22 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 HttpUtil.post(url, json)
             }
 
-            Log.d("UserViewModel", "API Registration successful: ${response.statusCode}")
-            true
+            val gson = Gson()
+            val jsonObject = gson.fromJson(response.body, JsonObject::class.java)
+
+            val preferences = jsonObject.getAsJsonObject("preferences")
+            val isPreferencesEmpty = preferences?.entrySet()?.isEmpty() ?: true
+            Log.d("PREFERENCES", preferences.toString())
+            if (isPreferencesEmpty) {
+                // preferences is empty
+                Pair(true, true)
+            } else {
+                // preferences is not empty
+                Pair(true, false)
+            }
         } catch (e: Exception) {
             Log.e("UserViewModel", "Error registering user with API", e)
-            false
-        }
-    }
-
-    fun completeInitialUserInfo(
-        userId: String,
-        firstName: String,
-        lastName: String,
-        context: Context,
-        navController: NavController
-    ) {
-        viewModelScope.launch {
-            val userMap = hashMapOf(
-                "userId" to userId,
-                "firstName" to firstName,
-                "lastName" to lastName
-            )
-
-            try {
-                db.collection(USERS_COLLECTION).document(userId).set(userMap).await()
-
-                val userEmail = auth.currentUser?.email
-                if (userEmail == null) {
-                    Log.e("UserViewModel", "User email is null, cannot register with API")
-                    Toast.makeText(context, "Error: User email not found", Toast.LENGTH_LONG).show()
-                    return@launch
-                }
-
-                val username = userEmail.substringBefore("@")
-                val fullName = "$firstName $lastName"
-
-                val apiRegistrationSuccess = registerUserWithAPI(
-                    email = userEmail,
-                    firebaseId = userId,
-                    username = username,
-                    fullName = fullName
-                )
-
-                if (!apiRegistrationSuccess) {
-                    Log.w(
-                        "UserViewModel",
-                        "API registration failed, but continuing with local setup"
-                    )
-                    Toast.makeText(
-                        context,
-                        "Profile created locally, but server registration failed",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } else {
-                    Log.d("UserViewModel", "User successfully registered with backend API")
-                    Toast.makeText(context, "Profile created successfully!", Toast.LENGTH_SHORT)
-                        .show()
-                }
-
-                authPrefs.edit().apply {
-                    putString("userId", userId)
-                    putString("firstName", firstName)
-                    putString("lastName", lastName)
-                    apply()
-                }
-
-                val newUser = gson.fromJson(gson.toJson(userMap), User::class.java)
-                _user.value = newUser
-                saveUserToPreferences(newUser)
-
-                navController.navigate("questionnaire/$userId") {
-                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                }
-
-            } catch (e: Exception) {
-                Log.e("UserViewModel", "Error completing initial user info", e)
-                Toast.makeText(context, "Error saving details: ${e.message}", Toast.LENGTH_LONG)
-                    .show()
-            }
+            Pair(false, false)
         }
     }
 

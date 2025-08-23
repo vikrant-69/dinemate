@@ -174,7 +174,9 @@ class QuestionnaireViewModel : ViewModel() {
                 val answers = buildAnswersFromSelections()
                 val jsonBody = buildPostBody(currentUserId, answers)
 
+                Log.d("PREFERENCES", jsonBody)
                 val url = "${baseURL.trimEnd('/')}/api/v1/user/update_preferences"
+                Log.d("URL", url)
 
                 val response = withContext(Dispatchers.IO) {
                     HttpUtil.post(url, jsonBody)

@@ -183,9 +183,11 @@ fun HomeScreen(
                     Log.d("HomeScreen", "Restaurant clicked: ${restaurant.name}")
                 }
             )
-            "profile" -> ProfileTab(userViewModel)
+            "profile" -> ProfileTab(
+                userViewModel,
+                padding
+            )
         }
-
     }
 
     if (showCreateSheet) {
