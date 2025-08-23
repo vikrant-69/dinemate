@@ -173,7 +173,10 @@ fun HomeScreen(
                 onNavigateToChat = onNavigateToChat
             )
 
-            "profile" -> ProfileTab(userViewModel)
+            "profile" -> ProfileTab(
+                userViewModel,
+                padding
+            )
         }
 
     }

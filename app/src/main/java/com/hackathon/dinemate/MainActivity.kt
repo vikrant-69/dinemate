@@ -28,12 +28,18 @@ import androidx.navigation.navArgument
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import com.hackathon.dinemate.home.GroupChatScreen
-import com.hackathon.dinemate.home.HomeScreen
-import com.hackathon.dinemate.questionnaire.QuestionnaireScreen
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import com.hackathon.dinemate.config.AppConfig
 import com.hackathon.dinemate.signin.SignInScreen
 import com.hackathon.dinemate.ui.theme.DineMateTheme
 import com.hackathon.dinemate.user.UserViewModel
+import com.hackathon.dinemate.home.HomeScreen
+import com.hackathon.dinemate.questionnaire.QuestionnaireScreen
+import com.hackathon.dinemate.util.HttpUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -82,6 +88,7 @@ fun AppNavigation(
     LaunchedEffect(Unit) {
         val user = Firebase.auth.currentUser
         Log.d("USER", user.toString())
+
         if (user != null) {
             Log.d("Navigation", "User is signed in. Navigating to Home Screen.")
             startDestination = "homeScreen/${user.uid}"
@@ -97,7 +104,7 @@ fun AppNavigation(
     if (isAuthChecked) {
         NavHost(navController = navController, startDestination = startDestination) {
             composable("signInScreen") {
-                SignInScreen(navController, context)
+                SignInScreen(userViewModel, navController, context)
             }
 
             composable(
@@ -115,46 +122,12 @@ fun AppNavigation(
                 )
             }
 
-            composable(
-                "homeScreen/{userId}",
-                arguments = listOf(navArgument("userId") { type = NavType.StringType })
-            ) { backStackEntry ->
+            composable("homeScreen/{userId}") { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: ""
                 HomeScreen(
                     userId = userId,
-                    onNavigateToChat = { group ->
-                        navController.navigate(
-                            "groupChat/${group.id}/${group.name}/${group.invite_code ?: ""}/${userId}"
-                        )
-                    },
+                    baseURL = AppConfig.BASE_URL,
                     userViewModel = userViewModel
-                )
-            }
-
-            composable(
-                "groupChat/{groupId}/{groupName}/{inviteCode}/{userId}",
-                arguments = listOf(
-                    navArgument("groupId") { type = NavType.StringType },
-                    navArgument("groupName") { type = NavType.StringType },
-                    navArgument("inviteCode") {
-                        type = NavType.StringType
-                        defaultValue = ""
-                        nullable = true
-                    },
-                    navArgument("userId") { type = NavType.StringType }
-                )
-            ) { backStackEntry ->
-                val groupId = backStackEntry.arguments?.getString("groupId") ?: ""
-                val groupName = backStackEntry.arguments?.getString("groupName") ?: ""
-                val inviteCode = backStackEntry.arguments?.getString("inviteCode")
-                val userId = backStackEntry.arguments?.getString("userId") ?: ""
-
-                GroupChatScreen(
-                    userId = userId,
-                    groupId = groupId,
-                    groupName = groupName,
-                    inviteCode = inviteCode,
-                    onBack = { navController.popBackStack() }
                 )
             }
         }
