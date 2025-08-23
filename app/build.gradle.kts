@@ -111,6 +111,17 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     // icon pack
     implementation(libs.icons.lucide)
+    implementation("io.coil-kt:coil-compose:2.4.0") // For AsyncImage
+
+    // Location services
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    // Permission handling
+    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+
+    // Activity Compose
+    implementation("androidx.activity:activity-compose:1.8.2")
+
 
     // smooth swipe
     implementation(libs.androidx.foundation)
