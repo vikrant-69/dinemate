@@ -1,5 +1,6 @@
 package com.hackathon.dinemate.home
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,6 +58,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hackathon.dinemate.config.AppConfig
+import com.hackathon.dinemate.restaurant.LocationAwareSearchTab
+import com.hackathon.dinemate.restaurant.SearchTab
 import com.hackathon.dinemate.ui.theme.Black
 import com.hackathon.dinemate.ui.theme.Charcoal
 import com.hackathon.dinemate.ui.theme.LightGrey
@@ -172,13 +175,19 @@ fun HomeScreen(
                 padding = padding,
                 onNavigateToChat = onNavigateToChat
             )
-
+            "search" -> LocationAwareSearchTab(
+                padding = padding,
+                baseURL = baseURL,
+                onRestaurantClick = { restaurant ->
+                    // Handle restaurant click
+                    Log.d("HomeScreen", "Restaurant clicked: ${restaurant.name}")
+                }
+            )
             "profile" -> ProfileTab(
                 userViewModel,
                 padding
             )
         }
-
     }
 
     if (showCreateSheet) {
