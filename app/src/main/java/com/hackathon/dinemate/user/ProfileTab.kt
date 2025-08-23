@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,10 +55,10 @@ import com.hackathon.dinemate.ui.theme.LightGrey
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileTab(
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    padding: PaddingValues
 ) {
     val user by userViewModel.user.collectAsState()
-
     var profilePicUri by remember { mutableStateOf<Uri?>(user?.profilePic?.toUri()) }
     var newProfilePicUri by remember { mutableStateOf<Uri?>(null) }
     val imageProfilePickerLauncher = rememberLauncherForActivityResult(
@@ -74,12 +75,13 @@ fun ProfileTab(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(12.dp)
+            .padding(padding)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
         ) {
+
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -121,7 +123,7 @@ fun ProfileTab(
                 ) {
                     user?.let {
                         Text(
-                            text = it.firstName + " " + it.lastName,
+                            text = it.name,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 8.dp),

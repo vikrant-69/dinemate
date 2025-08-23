@@ -1,5 +1,6 @@
 package com.hackathon.dinemate.util
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -41,6 +42,8 @@ object HttpUtil {
         val connection = URL(url).openConnection() as HttpURLConnection
 
         try {
+            Log.d("PREFERENCES", body.toString())
+            Log.d("URL", url)
             // Set request method
             connection.requestMethod = requestType.name
 
@@ -57,11 +60,14 @@ object HttpUtil {
                 connection.setRequestProperty(key, value)
             }
 
+
             // Handle POST request body
             if (requestType == RequestType.POST && body != null) {
                 connection.doOutput = true
                 if (!headers.containsKey("Content-Type")) {
                     connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    Log.d("HEADER", headers.toString())
+
                 }
 
                 OutputStreamWriter(connection.outputStream, StandardCharsets.UTF_8).use { writer ->
