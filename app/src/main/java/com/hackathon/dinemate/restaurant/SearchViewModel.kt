@@ -1,8 +1,12 @@
 package com.hackathon.dinemate.restaurant
 
+import android.content.Context
+import android.location.Address
+import android.location.Geocoder
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hackathon.dinemate.R
 import com.hackathon.dinemate.config.AppConfig
 import com.hackathon.dinemate.util.HttpUtil
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +15,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import org.json.JSONObject
+import java.io.IOException
+import java.util.Locale
 
 class SearchViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -39,7 +46,7 @@ class SearchViewModel : ViewModel() {
         )
     }
 
-    fun searchRestaurants() {
+    fun searchRestaurants(context: Context) {
         val query = _uiState.value.query.trim()
         if (query.isEmpty()) {
             _uiState.value = _uiState.value.copy(error = "Please enter a search query")
@@ -51,7 +58,8 @@ class SearchViewModel : ViewModel() {
         val hasCurrentLocation = _uiState.value.hasCurrentLocation
 
         if (!hasLocation && !hasCurrentLocation) {
-            _uiState.value = _uiState.value.copy(error = "Please allow location access or enter a location")
+            _uiState.value =
+                _uiState.value.copy(error = "Please allow location access or enter a location")
             return
         }
 
@@ -59,14 +67,14 @@ class SearchViewModel : ViewModel() {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-                val url = buildSearchUrl(query, locationText, hasCurrentLocation)
+                val url = buildSearchUrl(context, query, locationText, hasCurrentLocation)
                 Log.d("SearchVM", "Searching: $url")
 
                 val response = withContext(Dispatchers.IO) {
                     HttpUtil.get(url)
                 }
 
-                val restaurants = parseRestaurantResponse(response.body)
+                val restaurants = parseRestaurantPreferences(response.body)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     restaurants = restaurants,
@@ -84,38 +92,86 @@ class SearchViewModel : ViewModel() {
         }
     }
 
-    private fun buildSearchUrl(query: String, locationText: String, useCurrentLocation: Boolean): String {
+    private fun buildSearchUrl(
+        context: Context,
+        query: String,
+        locationText: String,
+        useCurrentLocation: Boolean
+    ): String {
         val baseUrl = "${baseURL.trimEnd('/')}/api/v1/restaurants/search"
 
         return if (locationText.isNotEmpty()) {
-            "$baseUrl?query=$query&location=$locationText"
+            val coordinates: Pair<Double, Double>? =
+                getLatLongFromAddress(context, locationText)
+            "$baseUrl?query=$query&latitude=${coordinates?.first}&longitude=${coordinates?.second}"
         } else if (useCurrentLocation) {
-            "$baseUrl?query=$query&lat=${_uiState.value.currentLat}&lng=${_uiState.value.currentLng}"
+            "$baseUrl?query=$query&latitude=${_uiState.value.currentLat}&longitude=${_uiState.value.currentLng}"
         } else {
             "$baseUrl?query=$query"
         }
     }
 
-    private fun parseRestaurantResponse(responseBody: String): List<Restaurant> {
+    private fun getLatLongFromAddress(context: Context, address: String): Pair<Double, Double>? {
+        val geocoder = Geocoder(context, Locale.getDefault())
+        try {
+            val addressList: List<Address>? = geocoder.getFromLocationName(address, 1)
+            if (addressList != null && addressList.isNotEmpty()) {
+                val location = addressList[0]
+                val latitude = location.latitude
+                val longitude = location.longitude
+                return Pair(latitude, longitude)
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    private fun parseRestaurantPreferences(responseBody: String): List<Restaurant> {
         return try {
-            val jsonArray = JSONArray(responseBody)
+            val json = JSONObject(responseBody)
+            val jsonArray = json.optJSONArray("results") ?: JSONArray()
             val restaurants = mutableListOf<Restaurant>()
 
             for (i in 0 until jsonArray.length()) {
+                if (i > 4) {
+                    break
+                }
                 val item = jsonArray.getJSONObject(i)
+                val location = item.optJSONObject("location")
+                val categoriesArray = item.optJSONArray("categories")
+                val firstCategory = categoriesArray?.optJSONObject(0)
+                val icon = firstCategory?.optJSONObject("icon")
+
+                val formattedDistance =
+                    item.optInt("distance", -1).let { if (it != -1) "$it m" else "" }
+                val address = location?.optString("formatted_address") ?: ""
+                val name = item.optString("name", "")
+                val desc = firstCategory?.optString("name") ?: ""
+                val rating = 0.0
+                val website = item.optString("website", "")
+                val phone = item.optString("tel", "")
+                val image = when (i) {
+                    0 -> R.drawable.restaurant_1
+                    1 -> R.drawable.restaurant_2
+                    2 -> R.drawable.restaurant_3
+                    3 -> R.drawable.restaurant_4
+                    4 -> R.drawable.restaurant_5
+                    else -> R.drawable.restaurant_1
+                }
                 restaurants.add(
                     Restaurant(
-                        name = item.optString("name", "Unknown"),
-                        distance = item.optString("distance", "N/A"),
-                        description = item.optString("description", "No description"),
-                        image = item.optString("image", ""),
-                        rating = item.optDouble("rating", 0.0)
+                        name = name,
+                        distance = formattedDistance,
+                        description = if (desc.isNotBlank()) desc else address,
+                        image = image,
+                        rating = rating
                     )
                 )
             }
             restaurants
         } catch (e: Exception) {
-            Log.e("SearchVM", "Failed to parse restaurant response", e)
+            Log.e("GroupChatVM", "Failed to parse recommendations", e)
             emptyList()
         }
     }
