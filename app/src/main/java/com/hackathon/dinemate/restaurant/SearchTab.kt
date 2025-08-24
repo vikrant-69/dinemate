@@ -1,29 +1,54 @@
 package com.hackathon.dinemate.restaurant
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import com.hackathon.dinemate.R
 import com.hackathon.dinemate.config.AppConfig
 import com.hackathon.dinemate.ui.theme.Black
 import com.hackathon.dinemate.ui.theme.Charcoal
@@ -41,6 +66,7 @@ fun SearchTab(
 ) {
     val ui by viewModel.uiState.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
+    val context = LocalContext.current
 
     LaunchedEffect(baseURL) {
         viewModel.initialize(baseURL)
@@ -62,13 +88,12 @@ fun SearchTab(
             onLocationChange = viewModel::onLocationChange,
             onSearch = {
                 keyboardController?.hide()
-                viewModel.searchRestaurants()
+                viewModel.searchRestaurants(context)
             }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Results Section
         when {
             ui.isLoading -> {
                 Box(
@@ -82,19 +107,22 @@ fun SearchTab(
                     }
                 }
             }
+
             ui.error != null -> {
                 ErrorSection(
                     error = ui.error!!,
-                    onRetry = { viewModel.searchRestaurants() },
+                    onRetry = { viewModel.searchRestaurants(context) },
                     onDismiss = { viewModel.clearError() }
                 )
             }
+
             ui.restaurants.isNotEmpty() -> {
-                RestaurantList(
+                RestaurantRecommendations(
                     restaurants = ui.restaurants,
-                    onRestaurantClick = onRestaurantClick
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
             }
+
             ui.hasSearched -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -107,6 +135,7 @@ fun SearchTab(
                     )
                 }
             }
+
             else -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -160,7 +189,6 @@ private fun SearchForm(
                 color = Charcoal
             )
 
-            // Query Field (Required)
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
@@ -185,7 +213,6 @@ private fun SearchForm(
                 }
             )
 
-            // Location Field
             OutlinedTextField(
                 value = locationText,
                 onValueChange = onLocationChange,
@@ -208,7 +235,6 @@ private fun SearchForm(
                 enabled = !isLoading
             )
 
-            // Search Button
             Button(
                 onClick = onSearch,
                 enabled = query.isNotBlank() && !isLoading && (hasCurrentLocation || locationText.isNotBlank()),
@@ -233,7 +259,6 @@ private fun SearchForm(
                 }
             }
 
-            // Location Status - Updated to show actual address
             if (hasCurrentLocation || locationText.isNotEmpty()) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -242,7 +267,7 @@ private fun SearchForm(
                     Icon(
                         Icons.Filled.LocationOn,
                         contentDescription = null,
-                        tint = androidx.compose.ui.graphics.Color(0xFF4CAF50),
+                        tint = Color(0xFF4CAF50),
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
@@ -254,7 +279,7 @@ private fun SearchForm(
                             "Using current location"
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                        color = Color(0xFF4CAF50)
                     )
                 }
             }
@@ -262,8 +287,6 @@ private fun SearchForm(
     }
 }
 
-
-// Keep the existing ErrorSection, RestaurantList, and RestaurantItem composables as they are...
 
 @Composable
 private fun ErrorSection(
@@ -273,7 +296,9 @@ private fun ErrorSection(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth().padding(16.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
     ) {
         Text(
             text = error,
@@ -301,97 +326,112 @@ private fun ErrorSection(
 }
 
 @Composable
-private fun RestaurantList(
+private fun RestaurantRecommendations(
     restaurants: List<Restaurant>,
-    onRestaurantClick: (Restaurant) -> Unit
+    modifier: Modifier = Modifier
 ) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(bottom = 16.dp)
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = LightGrey
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        items(restaurants, key = { "${it.name}_${it.distance}" }) { restaurant ->
-            RestaurantItem(
-                restaurant = restaurant,
-                onClick = { onRestaurantClick(restaurant) }
-            )
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Text(
+                    text = "Top Recommendations",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Charcoal
+                )
+            }
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp),
+                contentPadding = PaddingValues(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    restaurants.forEach { restaurant ->
+                        RestaurantRecommendationItem(restaurant = restaurant)
+                        if (restaurant != restaurants.last()) {
+                            Divider(
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                color = MediumGrey.copy(alpha = 0.3f)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun RestaurantItem(
-    restaurant: Restaurant,
-    onClick: () -> Unit
-) {
-    ElevatedCard(
+fun RestaurantRecommendationItem(restaurant: Restaurant) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.elevatedCardColors(containerColor = LightGrey)
+            .clickable { /* Show in webview or open maps if needed */ }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            AsyncImage(
-                model = restaurant.image,
-                contentDescription = "${restaurant.name} image",
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
+        Image(
+            painter = painterResource(id = restaurant.image),
+            contentDescription = "Rating star",
+            modifier = Modifier.size(56.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = restaurant.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = Charcoal,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            restaurant.description.takeIf { it.isNotBlank() }?.let {
                 Text(
-                    text = restaurant.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Charcoal,
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Black,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
-                Text(
-                    text = restaurant.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Black,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_star),
+                    contentDescription = "Rating star",
+                    modifier = Modifier.size(16.dp)
                 )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = restaurant.distance,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MediumGrey
-                    )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = "Rating",
-                            tint = androidx.compose.ui.graphics.Color(0xFFFFA000),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = restaurant.rating.toString(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MediumGrey
-                        )
-                    }
-                }
+                Text(
+                    text = "${restaurant.rating}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.DarkGray,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+                Text(
+                    text = " • ",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
+                )
+                Text(
+                    text = restaurant.distance,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
+                )
             }
         }
     }
