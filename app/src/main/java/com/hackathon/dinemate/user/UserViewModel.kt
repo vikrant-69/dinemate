@@ -42,8 +42,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     private var baseURL: String = AppConfig.BASE_URL
 
     private val _user = MutableStateFlow<User?>(null)
-
-    @SuppressLint("RestrictedApi")
     val user: StateFlow<User?> = _user
 
     private val userPrefs =
@@ -74,6 +72,39 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 )
             } catch (e: Exception) {
                 Log.e("UserViewModel", "Error deserializing user from SharedPreferences", e)
+            }
+        }
+    }
+
+    // Add this new function to reload user data from Firestore
+    fun reloadUserFromFirestore(userId: String) {
+        viewModelScope.launch {
+            try {
+                val document = db.collection(USERS_COLLECTION).document(userId).get().await()
+                if (document.exists()) {
+                    val user = document.toObject(User::class.java)
+                    user?.let {
+                        _user.value = it
+                        saveUserToPreferences(it)
+                        Log.d("UserViewModel", "Reloaded user from Firestore: ${it.userId}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("UserViewModel", "Error reloading user from Firestore", e)
+            }
+        }
+    }
+
+    // Add this function to load user after successful authentication
+    fun loadUserAfterAuth() {
+        val currentUser = auth.currentUser
+        currentUser?.let { firebaseUser ->
+            // First try to load from cache
+            loadUserFromPreferences()
+
+            // If cache is empty or user is still null, load from Firestore
+            if (_user.value == null) {
+                reloadUserFromFirestore(firebaseUser.uid)
             }
         }
     }
@@ -113,7 +144,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 saveUserToPreferences(user) // Save to cache here
 
-                Toast.makeText(context, "Sigin Completed", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Signin Completed", Toast.LENGTH_SHORT).show()
 
                 if (resultPair.second){
                     navController.navigate("questionnaire/${user.userId}")
@@ -128,10 +159,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                     .show()
             }
         }
-    }
-
-    fun getCurrentUserId(): String? {
-        return auth.currentUser?.uid
     }
 
     suspend fun registerUserWithAPI(
@@ -176,6 +203,47 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    suspend fun userLogin(
+        email: String,
+        firebaseId: String
+    ): Boolean{
+        return try {
+            val url = "${baseURL.trimEnd('/')}/api/v1/auth/login"
+
+            val json = JSONObject().apply {
+                put("email", email)
+                put("firebase_id", firebaseId)
+            }.toString()
+
+            Log.d("UserViewModel", "Logging in user with API: $json")
+
+            val response = withContext(Dispatchers.IO) {
+                HttpUtil.post(url, json)
+            }
+
+            val gson = Gson()
+            val jsonObject = gson.fromJson(response.body, JsonObject::class.java)
+
+            val preferences = jsonObject.getAsJsonObject("preferences")
+            val isPreferencesEmpty = preferences?.entrySet()?.isEmpty() ?: true
+            Log.d("PREFERENCES", preferences.toString())
+
+            // After successful API login, reload user data
+            reloadUserFromFirestore(firebaseId)
+
+            if (isPreferencesEmpty) {
+                // preferences is empty
+                true
+            } else {
+                // preferences is not empty
+                false
+            }
+        } catch (e: Exception) {
+            Log.e("UserViewModel", "Error logging in user with API", e)
+            false
+        }
+    }
+
     fun getUserEmail(): String? {
         return FirebaseAuth.getInstance().currentUser?.email
     }
@@ -194,6 +262,12 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                     db.collection("dinemate_users").document(userId)
                         .update("profilePic", uri.toString())
                         .addOnSuccessListener {
+                            // Update local user state as well
+                            _user.value?.let { currentUser ->
+                                val updatedUser = currentUser.copy(profilePic = uri.toString())
+                                _user.value = updatedUser
+                                saveUserToPreferences(updatedUser)
+                            }
                             onComplete(true, "Cover updated successfully")
                         }
                         .addOnFailureListener { e ->
@@ -214,6 +288,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 clearUserPreferences()
                 _user.value = null
                 onComplete?.invoke()
+                Log.d("UserViewModel", "User signed out successfully")
             } else {
                 onError?.invoke(task.exception ?: Exception("Unknown error during sign-out"))
             }

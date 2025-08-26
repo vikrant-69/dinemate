@@ -1,6 +1,9 @@
 package com.hackathon.dinemate.user
 
+import android.content.Context
 import android.net.Uri
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -33,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,11 +47,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
+import com.google.firebase.auth.FirebaseAuth
 import com.hackathon.dinemate.ui.theme.Charcoal
 import com.hackathon.dinemate.ui.theme.LightGrey
 
@@ -56,9 +63,19 @@ import com.hackathon.dinemate.ui.theme.LightGrey
 @Composable
 fun ProfileTab(
     userViewModel: UserViewModel,
-    padding: PaddingValues
+    padding: PaddingValues,
+    navController: NavController,
+    context: Context
 ) {
     val user by userViewModel.user.collectAsState()
+    Log.d("USER_INFO", user.toString())
+    LaunchedEffect(user) {
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (user == null && currentUser != null) {
+            Log.d("ProfileTab", "User is null but Firebase user exists, reloading...")
+            userViewModel.reloadUserFromFirestore(currentUser.uid)
+        }
+    }
     var profilePicUri by remember { mutableStateOf<Uri?>(user?.profilePic?.toUri()) }
     var newProfilePicUri by remember { mutableStateOf<Uri?>(null) }
     val imageProfilePickerLauncher = rememberLauncherForActivityResult(
@@ -251,6 +268,57 @@ fun ProfileTab(
                 }
             }
             AboutSection(aboutText = aboutText)
+
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = {
+//                            navController.navigate("contactUs")
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Charcoal, // Background color
+                            contentColor = LightGrey   // Text color
+                        ),
+                        modifier = Modifier.fillMaxWidth(0.4f)
+                    ) {
+                        AutoResizeText(
+                            text = "About Us",
+                            style = TextStyle(fontSize = MaterialTheme.typography.bodyLarge.fontSize)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            userViewModel.signOut(
+                                onComplete = {
+                                    navController.navigate("signInScreen") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                },
+                                onError = { error ->
+                                    Toast.makeText(context, "Sign-out failed: ${error.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Charcoal, // Background color
+                            contentColor = LightGrey   // Text color
+                        ),
+                        modifier = Modifier.fillMaxWidth(0.7f)
+                    ) {
+                        AutoResizeText(
+                            text = "Sign Out",
+                            style = TextStyle(fontSize = MaterialTheme.typography.bodyLarge.fontSize)
+                        )
+                    }
+                }
+            }
         }
     }
 }
