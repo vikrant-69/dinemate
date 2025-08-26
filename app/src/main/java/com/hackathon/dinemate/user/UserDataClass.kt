@@ -13,6 +13,8 @@ data class User(
     var name: String = "",
 
     @get:PropertyName("profilePic") @set:PropertyName("profilePic")
-    var profilePic: String? = null
+    var profilePic: String? = null,
 
+    @get:PropertyName("preferences") @set:PropertyName("preferences")
+    var preferences: List<String>? = null
 )

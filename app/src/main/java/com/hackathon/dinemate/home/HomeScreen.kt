@@ -1,7 +1,10 @@
 package com.hackathon.dinemate.home
 
+import android.content.Context
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -68,6 +71,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.hackathon.dinemate.config.AppConfig
 import com.hackathon.dinemate.restaurant.LocationAwareSearchTab
 import com.hackathon.dinemate.ui.theme.Black
@@ -80,6 +84,7 @@ import com.hackathon.dinemate.user.UserViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -87,7 +92,9 @@ fun HomeScreen(
     baseURL: String = AppConfig.BASE_URL,
     onNavigateToChat: (GroupSummary) -> Unit = {},
     viewModel: HomeViewModel = viewModel(),
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    navController: NavController,
+    context: Context
 ) {
     val ui by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf("home") }
@@ -206,7 +213,9 @@ fun HomeScreen(
 
             "profile" -> ProfileTab(
                 userViewModel,
-                padding
+                padding,
+                navController,
+                context
             )
         }
     }
@@ -392,6 +401,7 @@ private fun SmallActionFab(
     )
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun HomeGroupsList(
     ui: HomeUiState,
@@ -453,6 +463,7 @@ fun CircularProgressIndicator(color: Color) {
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun EnhancedGroupCard(
     group: GroupSummary,
@@ -683,6 +694,7 @@ private fun EmptyGroupsState() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun formatCreatedDate(dateTime: String?): String {
     if (dateTime.isNullOrBlank()) return "N/A"
     return try {
@@ -693,6 +705,7 @@ private fun formatCreatedDate(dateTime: String?): String {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun formatLastActivity(dateTime: String?): String {
     if (dateTime.isNullOrBlank()) return "Never"
     return try {

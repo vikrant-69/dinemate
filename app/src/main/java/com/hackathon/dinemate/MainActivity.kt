@@ -84,8 +84,20 @@ fun AppNavigation(
         Log.d("USER", user.toString())
 
         if (user != null) {
-            Log.d("Navigation", "User is signed in. Navigating to Home Screen.")
-            startDestination = "homeScreen/${user.uid}"
+            val (_, isPreferencesEmpty) = userViewModel.registerUserWithAPI(
+                email = user.email.toString(),
+                firebaseId = user.uid,
+                username = user.email?.split("@")?.get(0) ?: "NoName",
+                fullName = user.displayName.toString()
+            )
+
+            if (isPreferencesEmpty) {
+                Log.d("Navigation", "Preferences are empty. Navigating to Questionnaire.")
+                startDestination = "questionnaire/${user.uid}"
+            } else {
+                Log.d("Navigation", "Preferences exist. Navigating to Home Screen.")
+                startDestination = "homeScreen/${user.uid}"
+            }
         } else {
             Log.d("Navigation", "User is not signed in. Navigating to Sign-In Screen.")
             startDestination = "signInScreen"
@@ -128,7 +140,9 @@ fun AppNavigation(
                             "groupChat/${group.id}/${group.name}/${group.invite_code ?: ""}/${userId}"
                         )
                     },
-                    userViewModel = userViewModel
+                    userViewModel = userViewModel,
+                    navController = navController,
+                    context = context
                 )
             }
 
