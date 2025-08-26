@@ -68,14 +68,15 @@ fun ProfileTab(
     context: Context
 ) {
     val user by userViewModel.user.collectAsState()
-    Log.d("USER_INFO1", user.toString())
     LaunchedEffect(user) {
         val currentUser = FirebaseAuth.getInstance().currentUser
-        if (user == null && currentUser != null) {
+        if (currentUser != null) {
             Log.d("ProfileTab", "User is null but Firebase user exists, reloading...")
             userViewModel.reloadUserFromFirestore(currentUser.uid)
         }
     }
+    Log.d("USER_INFO1", user.toString())
+
     var profilePicUri by remember { mutableStateOf<Uri?>(user?.profilePic?.toUri()) }
     var newProfilePicUri by remember { mutableStateOf<Uri?>(null) }
     val imageProfilePickerLauncher = rememberLauncherForActivityResult(
@@ -267,7 +268,10 @@ fun ProfileTab(
                     )
                 }
             }
-            PreferencesScreen(userViewModel)
+            PreferencesSection(
+                userViewModel,
+                navController
+            )
 
             Column(
                 modifier = Modifier.padding(16.dp)

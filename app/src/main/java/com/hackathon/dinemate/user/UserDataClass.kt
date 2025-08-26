@@ -16,5 +16,5 @@ data class User(
     var profilePic: String? = null,
 
     @get:PropertyName("preferences") @set:PropertyName("preferences")
-    var preferences: List<String>? = null
+    var preferences: List<String> = emptyList()
 )
