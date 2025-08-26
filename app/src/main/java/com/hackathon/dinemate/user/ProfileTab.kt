@@ -68,7 +68,7 @@ fun ProfileTab(
     context: Context
 ) {
     val user by userViewModel.user.collectAsState()
-    Log.d("USER_INFO", user.toString())
+    Log.d("USER_INFO1", user.toString())
     LaunchedEffect(user) {
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (user == null && currentUser != null) {
@@ -267,7 +267,7 @@ fun ProfileTab(
                     )
                 }
             }
-            AboutSection(aboutText = aboutText)
+            PreferencesScreen(userViewModel)
 
             Column(
                 modifier = Modifier.padding(16.dp)
