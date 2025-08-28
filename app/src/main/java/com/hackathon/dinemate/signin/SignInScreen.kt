@@ -179,9 +179,9 @@ fun SignInScreen(
                                     isLoading = false
 
 
-                                    navController.navigate("homeScreen/$userId") {
-                                        popUpTo("signInScreen") { inclusive = true }
-                                    }
+//                                    navController.navigate("homeScreen/$userId") {
+//                                        popUpTo("signInScreen") { inclusive = true }
+//                                    }
                                 }
                                 .addOnFailureListener { e ->
                                     Log.e("FirestoreDebug", "Error fetching user data", e)
