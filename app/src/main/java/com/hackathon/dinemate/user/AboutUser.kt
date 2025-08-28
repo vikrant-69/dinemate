@@ -2,6 +2,8 @@ package com.hackathon.dinemate.user
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,8 +21,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,18 +35,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.hackathon.dinemate.questionnaire.SelectedOptionsStore
+import com.hackathon.dinemate.questionnaire.SelectedOptionsViewer
 import com.hackathon.dinemate.ui.theme.Charcoal
 import com.hackathon.dinemate.ui.theme.LightGrey
+import com.hackathon.dinemate.ui.theme.White
 
 @Composable
-fun AboutSection(
-    aboutText: String, // Comes from your ViewModel state
+fun PreferencesSection(
+    userViewModel: UserViewModel,
+    navController: NavController
 ) {
     // State for managing edit mode
     var isEditing by remember { mutableStateOf(false) }
-    // State to hold the text *during* editing, initialized with the current aboutText
-    // It's reset every time isEditing becomes true
-    var editedAboutText by remember(aboutText, isEditing) { mutableStateOf(aboutText) }
+    val user by userViewModel.user.collectAsState()
 
     Card(
         modifier = Modifier
@@ -69,14 +77,13 @@ fun AboutSection(
                     // Single, clear IconButton to enter edit mode
                     IconButton(
                         onClick = {
-                            editedAboutText = aboutText // Load current text into editor state
-                            isEditing = true
+                            navController.navigate("questionnaire/${user?.userId}")
                         },
                         modifier = Modifier.padding(top = 4.dp) // Adjust padding slightly if needed
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Edit,
-                            contentDescription = "Edit About Section", // For accessibility
+                            contentDescription = "Edit Preferences", // For accessibility
 //                            tint = LightGrey // Make icon visually distinct
                         )
                     }
@@ -85,78 +92,29 @@ fun AboutSection(
 
             Spacer(modifier = Modifier.height(8.dp)) // Space below the header row
 
-            if (isEditing) {
-                // --- Edit Mode ---
-                OutlinedTextField(
-                    value = editedAboutText,
-                    onValueChange = { editedAboutText = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    label = {
-                        Text(
-                            "Professional Summary",
-                            color = Color.Black
-                        )
-                    }, // More descriptive label
-                    maxLines = 5,
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = Charcoal),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Black,
-                        cursorColor = Charcoal // Cursor matches text color
-                    )
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(
-                        onClick = {
-                            isEditing = false
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = LightGrey, // Background color
-                            contentColor = Charcoal    // Text color
-                        )
-                    ) {
-                        Text("Cancel")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            // TODO: Add optional loading state indication here
-//                            userViewModel.updateUserAbout(userId, editedAboutText)
-                            // Note: The parent composable observing the ViewModel state
-                            // should provide the updated `aboutText` prop eventually.
-                            isEditing = false
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Charcoal, // Background color
-                            contentColor = LightGrey   // Text color
-                        )
-                    ) {
-                        Text("Save")
-                    }
-                }
-            } else {
-                // --- Display Mode ---
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top // Align icon nicely with text
-                ) {
-                    Text(
-                        // Display saved text or the placeholder
-                        text = aboutText.ifEmpty { "Add your dining preferences" },
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(top = 8.dp, bottom = 8.dp, end = 8.dp),
-                        color = Charcoal
-                    )
+            PreferenceList(preferences = user!!.preferences!!)
+        }
+    }
+}
 
-                }
-            }
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun PreferenceList(preferences: List<String>) {
+    // Use FlowRow to display the preference chips in a wrap-around layout
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        preferences.forEach { preference ->
+            SuggestionChip(
+                onClick = { /* Chips are for display only */ },
+                label = { Text(preference) },
+                colors = SuggestionChipDefaults.suggestionChipColors(
+                    containerColor = Charcoal,
+                    labelColor = White
+                )
+            )
         }
     }
 }

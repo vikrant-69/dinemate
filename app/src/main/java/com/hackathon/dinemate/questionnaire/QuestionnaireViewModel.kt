@@ -3,12 +3,15 @@ package com.hackathon.dinemate.questionnaire
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.hackathon.dinemate.util.HttpUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -20,6 +23,8 @@ class QuestionnaireViewModel : ViewModel() {
 
     private var currentUserId: String = ""
     private var baseURL: String = ""
+
+    private val db = Firebase.firestore
 
     private val questions = listOf(
         Question(
@@ -168,23 +173,32 @@ class QuestionnaireViewModel : ViewModel() {
 
     private fun saveAnswersToServer() {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSaving = true)
             try {
-                _uiState.value = _uiState.value.copy(isSaving = true)
-
+                // Step 1: Send preferences to your backend API
                 val answers = buildAnswersFromSelections()
                 val jsonBody = buildPostBody(currentUserId, answers)
-
-                Log.d("PREFERENCES", jsonBody)
                 val url = "${baseURL.trimEnd('/')}/api/v1/user/update_preferences"
-                Log.d("URL", url)
+                val response = withContext(Dispatchers.IO) { HttpUtil.post(url, jsonBody) }
 
-                val response = withContext(Dispatchers.IO) {
-                    HttpUtil.post(url, jsonBody)
+                Log.d("Questionnaire", "API response statusCode: ${response.statusCode}")
+
+                if (response.statusCode == 200) { // Check for successful API response
+                    // Step 2: Save the same preferences to the User object in Firestore
+                    val preferencesList = getAllSelectedPreferences()
+                    db.collection("dinemate_users").document(currentUserId)
+                        .update("preferences", preferencesList)
+                        .await() // Wait for the update to complete
+
+                    Log.d("Questionnaire", "Firestore preferences updated successfully.")
+
+                    // Step 3: Mark as completed only after all saving is done
+                    _uiState.value = _uiState.value.copy(isSaving = false, isCompleted = true)
+
+                } else {
+                    throw Exception("API call failed with status code ${response.statusCode}")
                 }
 
-                Log.d("Questionnaire", "POST response statusCode: ${response.statusCode}")
-
-                _uiState.value = _uiState.value.copy(isSaving = false)
             } catch (e: Exception) {
                 Log.e("Questionnaire", "Failed to save preferences", e)
                 _uiState.value = _uiState.value.copy(
@@ -227,5 +241,19 @@ class QuestionnaireViewModel : ViewModel() {
 
         root.put("preferences", preferences)
         return root.toString()
+    }
+
+    private fun getAllSelectedPreferences(): List<String> {
+        val selections = _uiState.value.selections
+        val allPreferences = mutableListOf<String>()
+        selections.forEach { (questionId, selectedIds) ->
+            val question = questions.find { it.id == questionId }
+            question?.options?.forEach { option ->
+                if (selectedIds.contains(option.id)) {
+                    allPreferences.add(option.text) // Storing the display text e.g., "Vegetarian"
+                }
+            }
+        }
+        return allPreferences
     }
 }
