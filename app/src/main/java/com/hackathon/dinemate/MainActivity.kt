@@ -2,11 +2,13 @@ package com.hackathon.dinemate
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -36,6 +38,7 @@ import com.hackathon.dinemate.ui.theme.DineMateTheme
 import com.hackathon.dinemate.user.UserViewModel
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,6 +63,7 @@ class MainActivity : ComponentActivity() {
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun AppNavigation(
@@ -84,11 +88,9 @@ fun AppNavigation(
         Log.d("USER", user.toString())
 
         if (user != null) {
-            val (_, isPreferencesEmpty) = userViewModel.registerUserWithAPI(
+            val isPreferencesEmpty = userViewModel.userLogin(
                 email = user.email.toString(),
-                firebaseId = user.uid,
-                username = user.email?.split("@")?.get(0) ?: "NoName",
-                fullName = user.displayName.toString()
+                firebaseId = user.uid
             )
 
             if (isPreferencesEmpty) {

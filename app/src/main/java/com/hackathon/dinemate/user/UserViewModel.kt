@@ -203,39 +203,47 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    suspend fun userLogin(
+        email: String,
+        firebaseId: String
+    ): Boolean{
+        return try {
+            val url = "${baseURL.trimEnd('/')}/api/v1/auth/login"
 
-    fun saveProfilePicture(
-        context: Context,
-        userId: String,
-        imageUri: Uri,
-        onComplete: (Boolean, String) -> Unit
-    ) {
-        val storageRef = storage.reference.child("dinemate_users/$userId/profile/profile_pic.jpg")
+            val json = JSONObject().apply {
+                put("email", email)
+                put("firebase_id", firebaseId)
+            }.toString()
 
-        storageRef.putFile(imageUri)
-            .addOnSuccessListener {
-                storageRef.downloadUrl.addOnSuccessListener { uri ->
-                    db.collection("dinemate_users").document(userId)
-                        .update("profilePic", uri.toString())
-                        .addOnSuccessListener {
-                            // Update local user state as well
-                            _user.value?.let { currentUser ->
-                                val updatedUser = currentUser.copy(profilePic = uri.toString())
-                                _user.value = updatedUser
-                                saveUserToPreferences(updatedUser)
-                            }
-                            onComplete(true, "Cover updated successfully")
-                        }
-                        .addOnFailureListener { e ->
-                            onComplete(false, "Failed to update profile")
-                        }
-                }
+            Log.d("UserViewModel", "Logging in user with API: $json")
+
+            val response = withContext(Dispatchers.IO) {
+                HttpUtil.post(url, json)
             }
-            .addOnFailureListener { e ->
-                onComplete(false, "Failed to upload image $e")
-                Log.d("ProfilePic", e.toString())
+
+            val gson = Gson()
+            val jsonObject = gson.fromJson(response.body, JsonObject::class.java)
+
+            val preferences = jsonObject.getAsJsonObject("preferences")
+            val isPreferencesEmpty = preferences?.entrySet()?.isEmpty() ?: true
+            Log.d("PREFERENCES", preferences.toString())
+
+            // After successful API login, reload user data
+            reloadUserFromFirestore(firebaseId)
+
+            if (isPreferencesEmpty) {
+                // preferences is empty
+                true
+            } else {
+                // preferences is not empty
+                false
             }
+        } catch (e: Exception) {
+            Log.e("UserViewModel", "Error logging in user with API", e)
+            false
+        }
     }
+
 
     fun signOut(onComplete: (() -> Unit)? = null, onError: ((Exception) -> Unit)? = null) {
         googleSignInClient.signOut().addOnCompleteListener { task ->
